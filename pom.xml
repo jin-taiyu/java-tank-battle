@@ -162,40 +162,6 @@
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
                 <version>1.0.0.Final</version>
-                <!-- 停用运行时镜像创建，避免模块冲突 -->
-                <!--
-                <executions>
-                    <execution>
-                        <id>create-runtime-image</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>create-runtime-image</goal>
-                        </goals>
-                        <configuration>
-                            <modulePath>
-                                <path>${project.build.directory}/classes</path>
-                                <path>${project.build.directory}/dependency</path>
-                                <path>${project.build.directory}/${project.artifactId}-${project.version}.jar</path>
-                            </modulePath>
-                            <modules>
-                                <module>com.tankbattle</module>
-                                <module>javafx.controls</module>
-                                <module>javafx.fxml</module>
-                                <module>javafx.media</module>
-                                <module>javafx.swing</module>
-                            </modules>
-                            <launcher>
-                                <name>tankbattle</name>
-                                <module>com.tankbattle</module>
-                            </launcher>
-                            <outputDirectory>${jlink.output.dir}</outputDirectory>
-                            <addModules>
-                                <addModule>javafx.base,javafx.controls,javafx.fxml,javafx.graphics,javafx.media,javafx.swing</addModule>
-                            </addModules>
-                        </configuration>
-                    </execution>
-                </executions>
-                -->
             </plugin>
         </plugins>
     </build>

@@ -52,6 +52,133 @@ jobs:
           mkdir -p release
           cp target/*-shaded.jar release/TankBattle-${{ matrix.platform_name }}.jar
 
+      # Windows - Create EXE installer
+      - name: Setup WiX for Windows Installer
+        if: matrix.os == 'windows-latest'
+        run: |
+          curl -L -o wix311-binaries.zip https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip
+          Expand-Archive wix311-binaries.zip -DestinationPath wix311
+          echo "D:/a/java-tank-battle/java-tank-battle/wix311" >> $GITHUB_PATH
+        shell: pwsh
+
+      - name: Create Windows Installer
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir -p installer/input
+          cp target/*-shaded.jar installer/input/TankBattle.jar
+          mkdir -p installer/input/images
+          cp -r src/main/resources/images installer/input/
+          
+          # 创建启动文件
+          echo '@echo off
+          java -jar TankBattle.jar' > installer/input/TankBattle.bat
+          
+          # 创建应用程序图标
+          jpackage --input installer/input \
+            --name "Tank Battle" \
+            --main-jar TankBattle.jar \
+            --main-class com.tankbattle.Launcher \
+            --type exe \
+            --win-console \
+            --win-shortcut \
+            --win-menu \
+            --icon src/main/resources/images/icon.ico \
+            --dest release
+            
+          # 如果没有图标文件，可以移除--icon选项
+          
+          # 复制安装程序到release目录
+          cp release/*.exe release/TankBattle-Windows-Installer.exe
+        shell: bash
+
+      # macOS - Create DMG installer
+      - name: Create macOS App Bundle and DMG
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir -p installer/input
+          cp target/*-shaded.jar installer/input/TankBattle.jar
+          mkdir -p installer/input/images
+          cp -r src/main/resources/images installer/input/
+          
+          # 创建Info.plist文件
+          cat > installer/input/Info.plist << EOL
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleDevelopmentRegion</key>
+              <string>zh_CN</string>
+              <key>CFBundleExecutable</key>
+              <string>Tank Battle</string>
+              <key>CFBundleIconFile</key>
+              <string>AppIcon.icns</string>
+              <key>CFBundleIdentifier</key>
+              <string>org.winsking.tankbattle</string>
+              <key>CFBundleInfoDictionaryVersion</key>
+              <string>6.0</string>
+              <key>CFBundleName</key>
+              <string>Tank Battle</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>10.9</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          EOL
+          
+          # 使用jpackage创建macOS应用和DMG
+          jpackage --input installer/input \
+            --name "Tank Battle" \
+            --main-jar TankBattle.jar \
+            --main-class com.tankbattle.Launcher \
+            --type dmg \
+            --mac-package-name "Tank Battle" \
+            --dest release
+            
+          # 如果有图标文件，可以添加--icon选项
+          # --icon src/main/resources/images/AppIcon.icns \
+          
+          cp release/*.dmg release/TankBattle-macOS.dmg
+        shell: bash
+
+      # Linux - Create DEB package
+      - name: Create Linux DEB Package
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p installer/input
+          cp target/*-shaded.jar installer/input/TankBattle.jar
+          mkdir -p installer/input/images
+          cp -r src/main/resources/images installer/input/
+          
+          # 创建Linux启动脚本
+          echo '#!/bin/bash
+          java -jar /opt/tankbattle/TankBattle.jar "$@"' > installer/input/tankbattle
+          chmod +x installer/input/tankbattle
+          
+          # 使用jpackage创建DEB包
+          jpackage --input installer/input \
+            --name tankbattle \
+            --main-jar TankBattle.jar \
+            --main-class com.tankbattle.Launcher \
+            --type deb \
+            --linux-shortcut \
+            --linux-app-category "Game" \
+            --linux-package-name "tankbattle" \
+            --dest release
+            
+          # 如果有图标文件，可以添加--icon选项
+          # --icon src/main/resources/images/icon.png \
+          
+          cp release/*.deb release/TankBattle-Linux.deb
+        shell: bash
+
+      # 继续创建ZIP包作为备选
       - name: Create Platform-specific Package (Windows)
         if: matrix.os == 'windows-latest'
         run: |
@@ -85,8 +212,14 @@ jobs:
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: TankBattle-${{ matrix.platform_name }}
-          path: release/*.zip
+          name: TankBattle-${{ matrix.platform_name }}-installers
+          path: |
+            release/*.zip
+            release/*.exe
+            release/*.msi
+            release/*.dmg
+            release/*.deb
+            release/*.rpm
 
   release:
     name: Create Release
@@ -108,9 +241,14 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/TankBattle-windows/*.zip
-            artifacts/TankBattle-mac/*.zip
-            artifacts/TankBattle-linux/*.zip
+            artifacts/TankBattle-windows-installers/*.zip
+            artifacts/TankBattle-windows-installers/*.exe
+            artifacts/TankBattle-windows-installers/*.msi
+            artifacts/TankBattle-mac-installers/*.zip
+            artifacts/TankBattle-mac-installers/*.dmg
+            artifacts/TankBattle-linux-installers/*.zip
+            artifacts/TankBattle-linux-installers/*.deb
+            artifacts/TankBattle-linux-installers/*.rpm
           draft: false
           prerelease: false
           name: Tank Battle ${{ github.ref_name }}
@@ -118,13 +256,17 @@ jobs:
             ## Tank Battle Release ${{ github.ref_name }}
             
             ### 下载说明
-            - Windows用户请下载 TankBattle-windows.zip
-            - macOS用户请下载 TankBattle-mac.zip
-            - Linux用户请下载 TankBattle-linux.zip
+            #### Windows用户
+            - 推荐: 下载 TankBattle-Windows-Installer.exe 安装包
+            - 备选: 下载 TankBattle-windows.zip，解压后运行TankBattle.bat
             
-            ### 运行说明
-            - Windows：解压后双击TankBattle.bat
-            - macOS/Linux：解压后在终端中运行 ./TankBattle.sh
+            #### macOS用户
+            - 推荐: 下载 TankBattle-macOS.dmg 安装包
+            - 备选: 下载 TankBattle-mac.zip，解压后在终端中运行 ./TankBattle.sh
+            
+            #### Linux用户
+            - 推荐: 下载 TankBattle-Linux.deb 安装包
+            - 备选: 下载 TankBattle-linux.zip，解压后在终端中运行 ./TankBattle.sh
             
             ### 系统要求
             - 需要Java 17或更高版本
