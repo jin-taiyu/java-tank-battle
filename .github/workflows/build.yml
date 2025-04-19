@@ -35,55 +35,16 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 安装图标转换工具
-      - name: Install Icon Conversion Tools (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y imagemagick librsvg2-bin
-        shell: bash
-
-      - name: Install Icon Conversion Tools (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          choco install imagemagick.app -y
-        shell: pwsh
-
-      - name: Install Icon Conversion Tools (macOS)
+      - name: Prepare Icons for macOS
         if: matrix.os == 'macos-latest'
-        run: |
-          brew install imagemagick librsvg
-          brew install --cask iconutil
-        shell: bash
-
-      # 转换图标为各平台格式
-      - name: Convert Icons for Windows
-        if: matrix.os == 'windows-latest'
         run: |
           mkdir -p src/main/resources/images/icons
-          magick convert -background none -density 256x256 src/main/resources/images/player_tank_right.svg -define icon:auto-resize=16,24,32,48,64,128,256 src/main/resources/images/icons/app_icon.ico
         shell: bash
 
-      - name: Convert Icons for macOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          mkdir -p src/main/resources/images/icons/AppIcon.iconset
-          # 生成不同尺寸的PNG
-          for size in 16 32 64 128 256 512 1024; do
-            rsvg-convert -w $size -h $size src/main/resources/images/player_tank_right.svg > src/main/resources/images/icons/AppIcon.iconset/icon_${size}x${size}.png
-            if [ $size -le 512 ]; then
-              rsvg-convert -w $((size*2)) -h $((size*2)) src/main/resources/images/player_tank_right.svg > src/main/resources/images/icons/AppIcon.iconset/icon_${size}x${size}@2x.png
-            fi
-          done
-          # 转换为icns
-          iconutil -c icns src/main/resources/images/icons/AppIcon.iconset -o src/main/resources/images/icons/AppIcon.icns
-        shell: bash
-
-      - name: Convert Icons for Linux
+      - name: Prepare Icons for Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
           mkdir -p src/main/resources/images/icons
-          rsvg-convert -w 256 -h 256 src/main/resources/images/player_tank_right.svg > src/main/resources/images/icons/app_icon.png
         shell: bash
 
       - name: Clean Maven repository
@@ -120,11 +81,9 @@ jobs:
           mkdir -p installer/input/images
           cp -r src/main/resources/images installer/input/
           
-          # 创建启动文件
           echo '@echo off
           java -jar TankBattle.jar' > installer/input/TankBattle.bat
           
-          # 创建应用程序图标
           jpackage --input installer/input \
             --name "Tank Battle" \
             --main-jar TankBattle.jar \
@@ -133,10 +92,9 @@ jobs:
             --win-console \
             --win-shortcut \
             --win-menu \
-            --icon src/main/resources/images/icons/app_icon.ico \
+            --icon src/main/resources/images/tank_battle.ico \
             --dest release
             
-          # 复制安装程序到release目录
           cp release/*.exe release/TankBattle-Windows-Installer.exe
         shell: bash
 
@@ -149,7 +107,6 @@ jobs:
           mkdir -p installer/input/images
           cp -r src/main/resources/images installer/input/
           
-          # 创建Info.plist文件
           cat > installer/input/Info.plist << EOL
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -160,7 +117,7 @@ jobs:
               <key>CFBundleExecutable</key>
               <string>Tank Battle</string>
               <key>CFBundleIconFile</key>
-              <string>AppIcon.icns</string>
+              <string>tank_battle.ico</string>
               <key>CFBundleIdentifier</key>
               <string>org.winsking.tankbattle</string>
               <key>CFBundleInfoDictionaryVersion</key>
@@ -181,14 +138,13 @@ jobs:
           </plist>
           EOL
           
-          # 使用jpackage创建macOS应用和DMG
           jpackage --input installer/input \
             --name "Tank Battle" \
             --main-jar TankBattle.jar \
             --main-class com.tankbattle.Launcher \
             --type dmg \
             --mac-package-name "Tank Battle" \
-            --icon src/main/resources/images/icons/AppIcon.icns \
+            --icon src/main/resources/images/tank_battle.ico \
             --dest release
           
           cp release/*.dmg release/TankBattle-macOS.dmg
@@ -203,12 +159,10 @@ jobs:
           mkdir -p installer/input/images
           cp -r src/main/resources/images installer/input/
           
-          # 创建Linux启动脚本
           echo '#!/bin/bash
           java -jar /opt/tankbattle/TankBattle.jar "$@"' > installer/input/tankbattle
           chmod +x installer/input/tankbattle
           
-          # 使用jpackage创建DEB包
           jpackage --input installer/input \
             --name tankbattle \
             --main-jar TankBattle.jar \
@@ -217,7 +171,7 @@ jobs:
             --linux-shortcut \
             --linux-app-category "Game" \
             --linux-package-name "tankbattle" \
-            --icon src/main/resources/images/icons/app_icon.png \
+            --icon src/main/resources/images/tank_battle.ico \
             --dest release
           
           cp release/*.deb release/TankBattle-Linux.deb
