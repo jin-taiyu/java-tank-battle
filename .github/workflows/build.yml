@@ -35,6 +35,57 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      # 安装图标转换工具
+      - name: Install Icon Conversion Tools (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick librsvg2-bin
+        shell: bash
+
+      - name: Install Icon Conversion Tools (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install imagemagick.app -y
+        shell: pwsh
+
+      - name: Install Icon Conversion Tools (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install imagemagick librsvg
+          brew install --cask iconutil
+        shell: bash
+
+      # 转换图标为各平台格式
+      - name: Convert Icons for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir -p src/main/resources/images/icons
+          magick convert -background none -density 256x256 src/main/resources/images/player_tank_right.svg -define icon:auto-resize=16,24,32,48,64,128,256 src/main/resources/images/icons/app_icon.ico
+        shell: bash
+
+      - name: Convert Icons for macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir -p src/main/resources/images/icons/AppIcon.iconset
+          # 生成不同尺寸的PNG
+          for size in 16 32 64 128 256 512 1024; do
+            rsvg-convert -w $size -h $size src/main/resources/images/player_tank_right.svg > src/main/resources/images/icons/AppIcon.iconset/icon_${size}x${size}.png
+            if [ $size -le 512 ]; then
+              rsvg-convert -w $((size*2)) -h $((size*2)) src/main/resources/images/player_tank_right.svg > src/main/resources/images/icons/AppIcon.iconset/icon_${size}x${size}@2x.png
+            fi
+          done
+          # 转换为icns
+          iconutil -c icns src/main/resources/images/icons/AppIcon.iconset -o src/main/resources/images/icons/AppIcon.icns
+        shell: bash
+
+      - name: Convert Icons for Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p src/main/resources/images/icons
+          rsvg-convert -w 256 -h 256 src/main/resources/images/player_tank_right.svg > src/main/resources/images/icons/app_icon.png
+        shell: bash
+
       - name: Clean Maven repository
         run: mvn clean -B
 
@@ -61,46 +112,19 @@ jobs:
           echo "D:/a/java-tank-battle/java-tank-battle/wix311" >> $GITHUB_PATH
         shell: pwsh
 
-      - name: Create Simple Icon for Windows (Optional)
-        if: matrix.os == 'windows-latest'
-        run: |
-          # 检查是否已有图标文件
-          if [ ! -f "src/main/resources/images/icon.ico" ]; then
-            # 如果存在player_tank_up.svg文件，可以尝试转换为ICO
-            if [ -f "src/main/resources/images/player_tank_up.svg" ]; then
-              # 尝试使用ImageMagick转换（如果可用）
-              if command -v convert &> /dev/null; then
-                mkdir -p temp_icons
-                convert -background transparent "src/main/resources/images/player_tank_up.svg" -define icon:auto-resize=256,128,64,48,32,16 "temp_icons/icon.ico"
-                mkdir -p src/main/resources/images
-                cp temp_icons/icon.ico src/main/resources/images/
-              else
-                # 如果没有ImageMagick，创建一个简单的文本文件作为占位符
-                echo "No icon conversion tool available. Using default icon."
-              fi
-            fi
-          fi
-        shell: bash
-
       - name: Create Windows Installer
         if: matrix.os == 'windows-latest'
         run: |
           mkdir -p installer/input
           cp target/*-shaded.jar installer/input/TankBattle.jar
           mkdir -p installer/input/images
-          cp -r src/main/resources/images installer/input/ || echo "Images directory may not exist, continuing..."
+          cp -r src/main/resources/images installer/input/
           
           # 创建启动文件
           echo '@echo off
           java -jar TankBattle.jar' > installer/input/TankBattle.bat
           
-          # 创建应用程序安装包 - 移除对图标的引用，除非确认图标存在
-          if [ -f "src/main/resources/images/icon.ico" ]; then
-            ICON_OPTION="--icon src/main/resources/images/icon.ico"
-          else
-            ICON_OPTION=""
-          fi
-          
+          # 创建应用程序图标
           jpackage --input installer/input \
             --name "Tank Battle" \
             --main-jar TankBattle.jar \
@@ -109,7 +133,7 @@ jobs:
             --win-console \
             --win-shortcut \
             --win-menu \
-            $ICON_OPTION \
+            --icon src/main/resources/images/icons/app_icon.ico \
             --dest release
             
           # 复制安装程序到release目录
@@ -164,10 +188,8 @@ jobs:
             --main-class com.tankbattle.Launcher \
             --type dmg \
             --mac-package-name "Tank Battle" \
+            --icon src/main/resources/images/icons/AppIcon.icns \
             --dest release
-            
-          # 如果有图标文件，可以添加--icon选项
-          # --icon src/main/resources/images/AppIcon.icns \
           
           cp release/*.dmg release/TankBattle-macOS.dmg
         shell: bash
@@ -195,15 +217,12 @@ jobs:
             --linux-shortcut \
             --linux-app-category "Game" \
             --linux-package-name "tankbattle" \
+            --icon src/main/resources/images/icons/app_icon.png \
             --dest release
-            
-          # 如果有图标文件，可以添加--icon选项
-          # --icon src/main/resources/images/icon.png \
           
           cp release/*.deb release/TankBattle-Linux.deb
         shell: bash
 
-      # 继续创建ZIP包作为备选
       - name: Create Platform-specific Package (Windows)
         if: matrix.os == 'windows-latest'
         run: |
