@@ -159,7 +159,7 @@
                                 <module>javafx.swing</module>
                             </modules>
                             <launcher>
-                                <n>tankbattle</n>
+                                <name>tankbattle</name>
                                 <module>com.tankbattle</module>
                             </launcher>
                             <outputDirectory>${jlink.output.dir}</outputDirectory>
