@@ -157,49 +157,6 @@
                 </configuration>
             </plugin>
             
-            <plugin>
-                <groupId>org.moditect</groupId>
-                <artifactId>moditect-maven-plugin</artifactId>
-                <version>1.0.0.Final</version>
-                <executions>
-                    <execution>
-                        <id>add-module-info</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>add-module-info</goal>
-                        </goals>
-                        <configuration>
-                            <jvmVersion>17</jvmVersion>
-                            <module>
-                                <moduleInfo>
-                                    <name>com.tankbattle</name>
-                                    <exports>
-                                        com.tankbattle;
-                                        com.tankbattle.model;
-                                        com.tankbattle.controller;
-                                        com.tankbattle.view;
-                                    </exports>
-                                    <requires>
-                                        java.base;
-                                        javafx.controls;
-                                        javafx.fxml;
-                                        javafx.media;
-                                        javafx.swing;
-                                        java.desktop;
-                                    </requires>
-                                    <opens>
-                                        com.tankbattle to javafx.fxml;
-                                        com.tankbattle.view to javafx.fxml;
-                                        com.tankbattle.controller to javafx.fxml;
-                                    </opens>
-                                </moduleInfo>
-                            </module>
-                            <overwriteExistingFiles>true</overwriteExistingFiles>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            
             <!-- JLink Maven Plugin for creating custom runtime images -->
             <plugin>
                 <groupId>org.moditect</groupId>
@@ -216,8 +173,10 @@
                             <modulePath>
                                 <path>${project.build.directory}/classes</path>
                                 <path>${project.build.directory}/dependency</path>
+                                <path>${project.build.directory}/${project.artifactId}-${project.version}.jar</path>
                             </modulePath>
                             <modules>
+                                <module>com.tankbattle</module>
                                 <module>javafx.controls</module>
                                 <module>javafx.fxml</module>
                                 <module>javafx.media</module>
