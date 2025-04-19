@@ -113,7 +113,6 @@
                             <overWriteReleases>false</overWriteReleases>
                             <overWriteSnapshots>false</overWriteSnapshots>
                             <overWriteIfNewer>true</overWriteIfNewer>
-                            <excludeArtifactIds>javafx-graphics</excludeArtifactIds>
                         </configuration>
                     </execution>
                 </executions>
