@@ -1,0 +1,121 @@
+name: Build and Release Tank Battle
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        java: [17]
+        include:
+          - os: ubuntu-latest
+            platform_name: linux
+          - os: windows-latest
+            platform_name: windows
+          - os: macos-latest
+            platform_name: mac
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml -P${{ matrix.platform_name }}
+
+      - name: Create Shaded JAR Archive
+        run: |
+          mkdir -p release
+          cp target/*-shaded.jar release/TankBattle-${{ matrix.platform_name }}.jar
+
+      - name: Create Platform-specific Package (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir -p release/TankBattle-${{ matrix.platform_name }}
+          cp target/*-shaded.jar release/TankBattle-${{ matrix.platform_name }}/TankBattle.jar
+          echo '@echo off
+          java -jar TankBattle.jar
+          pause' > release/TankBattle-${{ matrix.platform_name }}/TankBattle.bat
+          powershell Compress-Archive -Path release/TankBattle-${{ matrix.platform_name }} -DestinationPath release/TankBattle-${{ matrix.platform_name }}.zip
+
+      - name: Create Platform-specific Package (Mac)
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir -p release/TankBattle-${{ matrix.platform_name }}
+          cp target/*-shaded.jar release/TankBattle-${{ matrix.platform_name }}/TankBattle.jar
+          echo '#!/bin/bash
+          java -jar TankBattle.jar' > release/TankBattle-${{ matrix.platform_name }}/TankBattle.sh
+          chmod +x release/TankBattle-${{ matrix.platform_name }}/TankBattle.sh
+          cd release && zip -r TankBattle-${{ matrix.platform_name }}.zip TankBattle-${{ matrix.platform_name }}
+
+      - name: Create Platform-specific Package (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p release/TankBattle-${{ matrix.platform_name }}
+          cp target/*-shaded.jar release/TankBattle-${{ matrix.platform_name }}/TankBattle.jar
+          echo '#!/bin/bash
+          java -jar TankBattle.jar' > release/TankBattle-${{ matrix.platform_name }}/TankBattle.sh
+          chmod +x release/TankBattle-${{ matrix.platform_name }}/TankBattle.sh
+          cd release && zip -r TankBattle-${{ matrix.platform_name }}.zip TankBattle-${{ matrix.platform_name }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: TankBattle-${{ matrix.platform_name }}
+          path: release/*.zip
+
+  release:
+    name: Create Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: List Downloaded Artifacts
+        run: ls -R artifacts/
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/TankBattle-windows/*.zip
+            artifacts/TankBattle-mac/*.zip
+            artifacts/TankBattle-linux/*.zip
+          draft: false
+          prerelease: false
+          name: Tank Battle ${{ github.ref_name }}
+          body: |
+            ## Tank Battle Release ${{ github.ref_name }}
+            
+            ### 下载说明
+            - Windows用户请下载 TankBattle-windows.zip
+            - macOS用户请下载 TankBattle-mac.zip
+            - Linux用户请下载 TankBattle-linux.zip
+            
+            ### 运行说明
+            - Windows：解压后双击TankBattle.bat
+            - macOS/Linux：解压后在终端中运行 ./TankBattle.sh
+            
+            ### 系统要求
+            - 需要Java 17或更高版本
