@@ -48,6 +48,15 @@
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-all</artifactId>
             <version>1.17</version>
+            <scope>compile</scope>
+        </dependency>
+        
+        <!-- 添加明确的batik-transcoder依赖 -->
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-transcoder</artifactId>
+            <version>1.17</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
@@ -91,7 +100,6 @@
                                 </transformer>
                             </transformers>
                             <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-shaded.jar</outputFile>
-                            <!-- 处理重叠资源警告 -->
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -104,7 +112,6 @@
                                     </excludes>
                                 </filter>
                             </filters>
-                            <!-- 处理强封装问题 -->
                             <minimizeJar>false</minimizeJar>
                             <createDependencyReducedPom>true</createDependencyReducedPom>
                         </configuration>
@@ -214,7 +221,6 @@
                 </os>
             </activation>
             <dependencies>
-                <!-- 确保mac平台只使用一个JavaFX图形模块版本 -->
                 <dependency>
                     <groupId>org.openjfx</groupId>
                     <artifactId>javafx-graphics</artifactId>
