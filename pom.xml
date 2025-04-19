@@ -162,6 +162,8 @@
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
                 <version>1.0.0.Final</version>
+                <!-- 停用运行时镜像创建，避免模块冲突 -->
+                <!--
                 <executions>
                     <execution>
                         <id>create-runtime-image</id>
@@ -193,6 +195,7 @@
                         </configuration>
                     </execution>
                 </executions>
+                -->
             </plugin>
         </plugins>
     </build>
