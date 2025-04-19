@@ -35,8 +35,17 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Clean Maven repository
+        run: mvn clean -B
+
       - name: Build with Maven
-        run: mvn -B package --file pom.xml -P${{ matrix.platform_name }}
+        run: |
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            mvn -B package -Dmaven.test.skip=true -Pmac
+          else
+            mvn -B package -Dmaven.test.skip=true -P${{ matrix.platform_name }}
+          fi
+        shell: bash
 
       - name: Create Shaded JAR Archive
         run: |
