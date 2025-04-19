@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
+  <!-- 速度提升道具 - 绿色闪电 -->
+  <circle cx="15" cy="15" r="13" fill="#2ecc71" stroke="#27ae60" stroke-width="2"/>
+  <path d="M15 5 L18 15 L23 15 L12 25 L14 15 L10 15 Z" fill="#f1c40f" stroke="#e67e22" stroke-width="1.5"/>
+</svg>
