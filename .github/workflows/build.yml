@@ -61,19 +61,46 @@ jobs:
           echo "D:/a/java-tank-battle/java-tank-battle/wix311" >> $GITHUB_PATH
         shell: pwsh
 
+      - name: Create Simple Icon for Windows (Optional)
+        if: matrix.os == 'windows-latest'
+        run: |
+          # 检查是否已有图标文件
+          if [ ! -f "src/main/resources/images/icon.ico" ]; then
+            # 如果存在player_tank_up.svg文件，可以尝试转换为ICO
+            if [ -f "src/main/resources/images/player_tank_up.svg" ]; then
+              # 尝试使用ImageMagick转换（如果可用）
+              if command -v convert &> /dev/null; then
+                mkdir -p temp_icons
+                convert -background transparent "src/main/resources/images/player_tank_up.svg" -define icon:auto-resize=256,128,64,48,32,16 "temp_icons/icon.ico"
+                mkdir -p src/main/resources/images
+                cp temp_icons/icon.ico src/main/resources/images/
+              else
+                # 如果没有ImageMagick，创建一个简单的文本文件作为占位符
+                echo "No icon conversion tool available. Using default icon."
+              fi
+            fi
+          fi
+        shell: bash
+
       - name: Create Windows Installer
         if: matrix.os == 'windows-latest'
         run: |
           mkdir -p installer/input
           cp target/*-shaded.jar installer/input/TankBattle.jar
           mkdir -p installer/input/images
-          cp -r src/main/resources/images installer/input/
+          cp -r src/main/resources/images installer/input/ || echo "Images directory may not exist, continuing..."
           
           # 创建启动文件
           echo '@echo off
           java -jar TankBattle.jar' > installer/input/TankBattle.bat
           
-          # 创建应用程序图标
+          # 创建应用程序安装包 - 移除对图标的引用，除非确认图标存在
+          if [ -f "src/main/resources/images/icon.ico" ]; then
+            ICON_OPTION="--icon src/main/resources/images/icon.ico"
+          else
+            ICON_OPTION=""
+          fi
+          
           jpackage --input installer/input \
             --name "Tank Battle" \
             --main-jar TankBattle.jar \
@@ -82,11 +109,9 @@ jobs:
             --win-console \
             --win-shortcut \
             --win-menu \
-            --icon src/main/resources/images/icon.ico \
+            $ICON_OPTION \
             --dest release
             
-          # 如果没有图标文件，可以移除--icon选项
-          
           # 复制安装程序到release目录
           cp release/*.exe release/TankBattle-Windows-Installer.exe
         shell: bash
