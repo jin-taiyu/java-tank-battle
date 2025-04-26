@@ -5,10 +5,12 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
 import javafx.scene.layout.BackgroundRepeat;
@@ -69,6 +71,7 @@ public class GameView {
     private Scene gameOverScene;
     private Scene victoryScene;
     private Scene pauseScene;
+    private Scene helpScene;
     private Canvas gameCanvas;
     private GraphicsContext gc;
     
@@ -147,6 +150,9 @@ public class GameView {
         
         // 创建暂停场景
         createPauseScene();
+        
+        // 创建帮助场景
+        createHelpScene();
     }
     
     /**
@@ -473,6 +479,17 @@ public class GameView {
             startGame();
         });
         
+        // 创建玩法说明按钮
+        Button helpButton = createStyledButton("玩法说明", 200, 50);
+        helpButton.setOnAction(e -> {
+            try {
+                audioManager.playSoundEffect("button_click");
+            } catch (Exception ex) {
+                System.err.println("播放按钮音效失败: " + ex.getMessage());
+            }
+            showHelpScene();
+        });
+        
         // 创建退出游戏按钮
         Button exitButton = createStyledButton("退出游戏", 200, 50);
         exitButton.setOnAction(e -> {
@@ -485,10 +502,10 @@ public class GameView {
         });
         
         // 添加按钮到菜单选项面板
-        menuOptionsBox.getChildren().addAll(levelSelectorBox, startButton, exitButton);
+        menuOptionsBox.getChildren().addAll(levelSelectorBox, startButton, helpButton, exitButton);
         
         // 创建半透明面板作为菜单选项的背景
-        Rectangle menuBg = new Rectangle(400, 250);
+        Rectangle menuBg = new Rectangle(400, 300); // 加大高度以适应新增的按钮
         menuBg.setFill(Color.rgb(0, 0, 0, 0.7));
         menuBg.setArcWidth(20);
         menuBg.setArcHeight(20);
@@ -937,6 +954,367 @@ public class GameView {
     public void showPauseScene() {
         if (gameModel.getGameState() == GameState.PAUSED) {
             stage.setScene(pauseScene);
+        }
+    }
+    
+    /**
+     * 创建帮助场景（包含玩法说明和键位说明）
+     */
+    private void createHelpScene() {
+        // 创建主界面布局
+        StackPane helpRoot = new StackPane(); 
+        
+        // 创建背景
+        Rectangle background = new Rectangle(GAME_WIDTH, GAME_HEIGHT);
+        background.setFill(Color.rgb(20, 40, 60));
+        
+        // 创建帮助标题
+        Text helpTitle = new Text("游戏说明");
+        helpTitle.setFont(Font.font("Arial", FontWeight.BOLD, 46));
+        helpTitle.setFill(Color.WHITE);
+        helpTitle.setStroke(Color.BLACK);
+        helpTitle.setStrokeWidth(2);
+        
+        // 添加光晕效果
+        Glow glow = new Glow(0.6);
+        DropShadow shadow = new DropShadow();
+        shadow.setColor(Color.LIGHTBLUE);
+        shadow.setRadius(15);
+        shadow.setInput(glow);
+        helpTitle.setEffect(shadow);
+        
+        // 创建玩法说明区域
+        VBox gameplayBox = new VBox(25);
+        gameplayBox.setAlignment(Pos.CENTER_LEFT);
+        gameplayBox.setPadding(new Insets(15));
+        gameplayBox.setMaxWidth(GAME_WIDTH - 140);
+        
+        // 创建玩法说明标题
+        Text gameplayTitle = new Text("玩法说明");
+        gameplayTitle.setFont(Font.font("Arial", FontWeight.BOLD, 28));
+        gameplayTitle.setFill(Color.LIGHTGREEN);
+        gameplayTitle.setStroke(Color.BLACK);
+        gameplayTitle.setStrokeWidth(1);
+        
+        // 创建玩法说明内容，增加列表项之间的间距，优化嵌套列表格式
+        VBox gameplayTextBox = new VBox(8);
+        gameplayTextBox.setAlignment(Pos.CENTER_LEFT);
+        
+        // 主列表项 - 基本玩法
+        Text item1 = new Text("• 控制玩家坦克消灭所有敌方坦克以获得胜利");
+        Text item2 = new Text("• 坦克被敌人子弹击中时，将减少一条生命");
+        Text item3 = new Text("• 生命耗尽时游戏结束");
+        Text item4 = new Text("• 每消灭一辆敌方坦克会获得分数");
+        
+        // 道具说明标题
+        Text itemsTitle = new Text("• 地图上会随机出现各种道具：");
+        
+        // 子列表项 - 道具说明 (使用更明显的缩进和不同的前缀)
+        HBox shieldBox = new HBox(10);
+        shieldBox.setAlignment(Pos.CENTER_LEFT);
+        Rectangle shieldBullet = new Rectangle(6, 6);
+        shieldBullet.setFill(Color.CYAN);
+        Text shieldText = new Text(" 护盾：临时无敌状态");
+        shieldBox.getChildren().addAll(new Text("    "), shieldBullet, shieldText);
+        
+        HBox speedBox = new HBox(10);
+        speedBox.setAlignment(Pos.CENTER_LEFT);
+        Rectangle speedBullet = new Rectangle(6, 6);
+        speedBullet.setFill(Color.GREEN);
+        Text speedText = new Text(" 加速：提高坦克移动速度");
+        speedBox.getChildren().addAll(new Text("    "), speedBullet, speedText);
+        
+        HBox powerBox = new HBox(10);
+        powerBox.setAlignment(Pos.CENTER_LEFT);
+        Rectangle powerBullet = new Rectangle(6, 6);
+        powerBullet.setFill(Color.RED);
+        Text powerText = new Text(" 火力：增强子弹威力");
+        powerBox.getChildren().addAll(new Text("    "), powerBullet, powerText);
+        
+        HBox lifeBox = new HBox(10);
+        lifeBox.setAlignment(Pos.CENTER_LEFT);
+        Rectangle lifeBullet = new Rectangle(6, 6);
+        lifeBullet.setFill(Color.PINK);
+        Text lifeText = new Text(" 生命：增加一条生命");
+        lifeBox.getChildren().addAll(new Text("    "), lifeBullet, lifeText);
+        
+        HBox bombBox = new HBox(10);
+        bombBox.setAlignment(Pos.CENTER_LEFT);
+        Rectangle bombBullet = new Rectangle(6, 6);
+        bombBullet.setFill(Color.YELLOW);
+        Text bombText = new Text(" 炸弹：摧毁屏幕上所有敌方坦克");
+        bombBox.getChildren().addAll(new Text("    "), bombBullet, bombText);
+        
+        // 其他列表项
+        Text item5 = new Text("• 砖墙可以被子弹摧毁，钢墙无法摧毁");
+        Text item6 = new Text("• 按ESC键可以返回主菜单");
+        
+        // 设置所有文本的样式
+        for (Text text : new Text[]{item1, item2, item3, item4, itemsTitle, 
+                                   shieldText, speedText, powerText, lifeText, bombText, 
+                                   item5, item6}) {
+            text.setFont(Font.font("Arial", 18));
+            text.setFill(Color.WHITE);
+        }
+        
+        // 将所有元素添加到列表中
+        gameplayTextBox.getChildren().addAll(
+            item1, item2, item3, item4, itemsTitle,
+            shieldBox, speedBox, powerBox, lifeBox, bombBox,
+            item5, item6
+        );
+        
+        gameplayBox.getChildren().addAll(gameplayTitle, gameplayTextBox);
+        
+        // 创建键位说明区域
+        VBox controlsBox = new VBox(30);
+        controlsBox.setAlignment(Pos.CENTER);
+        controlsBox.setPadding(new Insets(15));
+        controlsBox.setMaxWidth(GAME_WIDTH - 120);
+        
+        // 创建键位说明标题
+        Text controlsTitle = new Text("键位说明");
+        controlsTitle.setFont(Font.font("Arial", FontWeight.BOLD, 28)); // 与玩法说明标题一致
+        controlsTitle.setFill(Color.LIGHTYELLOW);
+        controlsTitle.setStroke(Color.BLACK);
+        controlsTitle.setStrokeWidth(1);
+        
+        // 创建键位说明内容（使用HBox水平布局）
+        HBox controlsContentBox = new HBox(60);
+        controlsContentBox.setAlignment(Pos.CENTER);
+        controlsContentBox.setMaxWidth(GAME_WIDTH - 160);
+        
+        // 移动键位说明
+        VBox movementBox = new VBox(20);
+        movementBox.setAlignment(Pos.CENTER);
+        movementBox.setMinWidth(180);
+        movementBox.setMaxWidth(200);
+        
+        Text movementTitle = new Text("移动控制");
+        movementTitle.setFont(Font.font("Arial", FontWeight.BOLD, 22));
+        movementTitle.setFill(Color.WHITE);
+        
+        GridPane movementGrid = new GridPane();
+        movementGrid.setHgap(10);
+        movementGrid.setVgap(10);
+        movementGrid.setAlignment(Pos.CENTER);
+        movementGrid.setPadding(new Insets(15, 0, 15, 0));
+        
+        // 上
+        StackPane upKey = createKeyRect("W");
+        movementGrid.add(upKey, 1, 0);
+        
+        // 左
+        StackPane leftKey = createKeyRect("A");
+        movementGrid.add(leftKey, 0, 1);
+        
+        // 下
+        StackPane downKey = createKeyRect("S");
+        movementGrid.add(downKey, 1, 1);
+        
+        // 右
+        StackPane rightKey = createKeyRect("D");
+        movementGrid.add(rightKey, 2, 1);
+        
+        Text moveDescription = new Text("或者使用方向键↑↓←→");
+        moveDescription.setFont(Font.font("Arial", 16));
+        moveDescription.setFill(Color.WHITE);
+        
+        movementBox.getChildren().addAll(movementTitle, movementGrid, moveDescription);
+        
+        // 功能键位说明
+        VBox actionBox = new VBox(20);
+        actionBox.setAlignment(Pos.CENTER);
+        actionBox.setMinWidth(180);
+        actionBox.setMaxWidth(200);
+        
+        Text actionTitle = new Text("功能控制");
+        actionTitle.setFont(Font.font("Arial", FontWeight.BOLD, 22));
+        actionTitle.setFill(Color.WHITE);
+        
+        // 创建一个GridPane来统一功能控制的布局，与移动控制保持一致
+        GridPane actionGrid = new GridPane();
+        actionGrid.setHgap(10);
+        actionGrid.setVgap(15);
+        actionGrid.setAlignment(Pos.CENTER);
+        actionGrid.setPadding(new Insets(15, 0, 15, 0)); // 与移动控制相同的padding
+        
+        // 发射子弹
+        StackPane spaceKey = createKeyRect("空格");
+        Text fireText = new Text("发射子弹");
+        fireText.setFont(Font.font("Arial", 16));
+        fireText.setFill(Color.WHITE);
+        
+        // 暂停游戏
+        StackPane escKey = createKeyRect("ESC");
+        Text pauseText = new Text("暂停游戏");
+        pauseText.setFont(Font.font("Arial", 16));
+        pauseText.setFill(Color.WHITE);
+        
+        // 添加到GridPane，第一列是按键，第二列是说明文本
+        actionGrid.add(spaceKey, 0, 0);
+        actionGrid.add(fireText, 1, 0);
+        actionGrid.add(escKey, 0, 1);
+        actionGrid.add(pauseText, 1, 1);
+        
+        actionBox.getChildren().addAll(actionTitle, actionGrid);
+        
+        // 添加移动和功能键位说明到水平布局
+        controlsContentBox.getChildren().addAll(movementBox, actionBox);
+        
+        // 将标题和内容添加到键位说明区域
+        controlsBox.getChildren().addAll(controlsTitle, controlsContentBox);
+        
+        // 在底部添加ESC键使用提示
+        Text escHint = new Text("按下ESC键也可直接返回主菜单");
+        escHint.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        escHint.setFill(Color.LIGHTBLUE);
+        escHint.setOpacity(0.8);
+
+        // 创建返回按钮
+        Button backButton = createStyledButton("返回主菜单", 200, 50);
+        backButton.setOnAction(e -> {
+            try {
+                audioManager.playSoundEffect("button_click");
+            } catch (Exception ex) {
+                System.err.println("播放按钮音效失败: " + ex.getMessage());
+            }
+            showMainMenu();
+        });
+        
+        // 为按钮创建单独的容器，添加ESC提示和按钮
+        VBox buttonBox = new VBox(10);
+        buttonBox.setAlignment(Pos.CENTER);
+        buttonBox.setPadding(new Insets(15, 0, 5, 0));
+        buttonBox.getChildren().addAll(escHint, backButton);
+        
+        // 组合全部内容，调整各部分间距
+        VBox helpContent = new VBox();
+        helpContent.setAlignment(Pos.CENTER);
+        helpContent.setPadding(new Insets(20));
+        helpContent.setSpacing(25); // 使用setSpacing统一设置间距
+        helpContent.getChildren().addAll(helpTitle, gameplayBox, controlsBox, buttonBox);
+        
+        // 创建可滚动面板，防止内容溢出，确保内容在黑色背景框内
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setContent(helpContent);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER); // 隐藏水平滚动条
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED); // 根据需要显示垂直滚动条
+        
+        // 设置滚动面板的样式，使其透明并适应内部黑色背景框
+        scrollPane.setStyle(
+            "-fx-background: transparent; " +
+            "-fx-background-color: transparent; " + 
+            "-fx-padding: 0; " + 
+            "-fx-border-width: 0; " +
+            "-fx-control-inner-background: transparent;"
+        );
+        scrollPane.setPannable(true); // 允许鼠标拖动
+        
+        // 设置滚动面板的大小，使其与背景矩形大小一致，小一点以确保内容不会溢出
+        scrollPane.setPrefSize(GAME_WIDTH - 100, GAME_HEIGHT - 100);
+        scrollPane.setMaxSize(GAME_WIDTH - 100, GAME_HEIGHT - 100);
+        
+        // 确保内容默认显示在顶部
+        scrollPane.setVvalue(0);
+        
+        // 创建半透明面板作为背景
+        Rectangle helpBg = new Rectangle(GAME_WIDTH - 80, GAME_HEIGHT - 80);
+        helpBg.setFill(Color.rgb(0, 0, 0, 0.7));
+        helpBg.setArcWidth(20);
+        helpBg.setArcHeight(20);
+        helpBg.setStroke(Color.LIGHTBLUE);
+        helpBg.setStrokeWidth(2);
+        
+        // 组合内容和背景
+        StackPane contentPane = new StackPane();
+        contentPane.getChildren().addAll(helpBg, scrollPane);
+        
+        // 将所有元素添加到主布局
+        helpRoot.getChildren().addAll(background, contentPane);
+        
+        // 创建场景并添加键盘事件处理
+        helpScene = new Scene(helpRoot, GAME_WIDTH, GAME_HEIGHT);
+        
+        // 添加ESC键返回主菜单功能
+        helpScene.setOnKeyPressed(event -> {
+            if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                try {
+                    audioManager.playSoundEffect("button_click");
+                } catch (Exception ex) {
+                    System.err.println("播放按钮音效失败: " + ex.getMessage());
+                }
+                showMainMenu();
+            }
+        });
+    }
+    
+    /**
+     * 为键位说明创建键盘按键矩形
+     * 
+     * @param key 按键文本
+     * @return 样式化的按键矩形
+     */
+    private StackPane createKeyRect(String key) {
+        Rectangle keyRect = new Rectangle(50, 50);
+        keyRect.setFill(Color.rgb(60, 60, 60));
+        keyRect.setArcWidth(10);
+        keyRect.setArcHeight(10);
+        keyRect.setStroke(Color.LIGHTGRAY);
+        keyRect.setStrokeWidth(2);
+        
+        Text keyText = new Text(key);
+        keyText.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        keyText.setFill(Color.WHITE);
+        
+        StackPane keyPane = new StackPane(keyRect, keyText);
+        return keyPane;
+    }
+    
+    /**
+     * 显示帮助场景
+     */
+    public void showHelpScene() {
+        try {
+            // 停止其他音乐，播放菜单音乐
+            audioManager.stopBackgroundMusic();
+            // 尝试播放音乐，但如果失败也继续执行
+            if (!audioManager.playBackgroundMusic("audio/menu_bgm.wav", true)) {
+                System.err.println("菜单背景音乐加载失败");
+            }
+        } catch (Exception e) {
+            System.err.println("播放帮助界面音乐失败: " + e.getMessage());
+            // 出现异常时禁用所有音频
+            audioManager.disableAllAudio();
+        }
+        
+        stage.setScene(helpScene);
+        
+        // 确保帮助内容滚动到顶部
+        javafx.application.Platform.runLater(() -> {
+            // 查找ScrollPane组件并设置其滚动位置为顶部
+            findScrollPaneAndScrollToTop(helpScene.getRoot());
+        });
+    }
+    
+    /**
+     * 递归查找ScrollPane并将其滚动到顶部
+     * 
+     * @param node 要搜索的节点
+     */
+    private void findScrollPaneAndScrollToTop(javafx.scene.Node node) {
+        if (node instanceof ScrollPane) {
+            ScrollPane scrollPane = (ScrollPane) node;
+            scrollPane.setVvalue(0); // 滚动到顶部
+            return;
+        }
+        
+        if (node instanceof javafx.scene.Parent) {
+            javafx.scene.Parent parent = (javafx.scene.Parent) node;
+            for (javafx.scene.Node child : parent.getChildrenUnmodifiable()) {
+                findScrollPaneAndScrollToTop(child);
+            }
         }
     }
     
