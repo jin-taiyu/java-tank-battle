@@ -86,10 +86,7 @@ public class GameController {
                     break;
             }
         } else if (gameModel.getGameState() == GameState.PAUSED) {
-            if (event.getCode() == KeyCode.ESCAPE || event.getCode() == KeyCode.P) {
-                gameModel.resumeGame();
-                gameView.showGameScene();
-            }
+            // 暂停界面仅使用按钮退出，禁用键盘恢复
         }
     }
     

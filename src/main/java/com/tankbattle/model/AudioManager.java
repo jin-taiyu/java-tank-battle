@@ -4,6 +4,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import javafx.application.Platform;
 import javafx.scene.media.AudioClip;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -153,6 +154,13 @@ public class AudioManager {
             stopBackgroundMusic();
             
             URL url = getClass().getClassLoader().getResource(path);
+            // 尝试其他加载方式
+            if (url == null) {
+                url = AudioManager.class.getResource("/" + path);
+            }
+            if (url == null) {
+                url = getClass().getResource("/com/tankbattle/" + path);
+            }
             if (url != null) {
                 try {
                     Media media = new Media(url.toString());
@@ -177,22 +185,13 @@ public class AudioManager {
                     if (loop) {
                         bgmPlayer.setCycleCount(MediaPlayer.INDEFINITE);
                     }
-                    
-                    // 确保音量适中
                     bgmPlayer.setVolume(0.6);
-                    
-                    // 添加延迟，确保上一个音乐实例已完全释放
-                    new Thread(() -> {
-                        try {
-                            Thread.sleep(100);
+                    // 直接在 JavaFX 线程上播放，无需额外线程
+                    Platform.runLater(() -> {
+                        if (bgmPlayer != null) {
                             bgmPlayer.play();
-                        } catch (InterruptedException e) {
-                            System.out.println("音乐播放延迟被中断");
-                        } catch (Exception e) {
-                            System.out.println("延迟播放音乐时出错: " + e.getMessage());
                         }
-                    }).start();
-                    
+                    });
                     return true;
                 } catch (Exception e) {
                     System.out.println("背景音乐创建失败: " + path + ", 错误: " + e.getMessage());

@@ -111,6 +111,9 @@ public class GameView {
     private Text enemiesText;
     private HBox statusEffectsBox;
     
+    // 在类成员区域添加标志位，避免重复播放
+    private boolean levelCompleteAudioPlayed = false;
+    
     /**
      * 构造函数
      * 
@@ -880,6 +883,9 @@ public class GameView {
         
         // 创建场景
         pauseScene = new Scene(pauseRoot, GAME_WIDTH, GAME_HEIGHT);
+        
+        // 移除对键盘监听，确保仅通过按钮恢复/退出
+        pauseScene.setOnKeyPressed(null);
     }
     
     /**
@@ -907,6 +913,7 @@ public class GameView {
      * 显示游戏场景
      */
     public void showGameScene() {
+        levelCompleteAudioPlayed = false;
         try {
             // 播放游戏音乐
             audioManager.stopBackgroundMusic();
@@ -978,23 +985,18 @@ public class GameView {
      */
     public void showLevelCompleteScene() {
         if (gameModel.getGameState() == GameState.LEVEL_COMPLETE) {
-            try {
-                // 重复播放胜利音效
-                audioManager.playSoundEffect("victory");
-                
-                // 停止当前背景音乐
-                audioManager.stopBackgroundMusic();
-                
-                // 播放较轻快的背景音乐，可以使用菜单音乐或特殊关卡完成音乐
-                if (!audioManager.playBackgroundMusic("audio/menu_bgm.wav", true)) {
-                    System.err.println("关卡完成背景音乐加载失败");
+            if (!levelCompleteAudioPlayed) {
+                try {
+                    audioManager.playSoundEffect("victory");
+                    audioManager.stopBackgroundMusic();
+                    if (!audioManager.playBackgroundMusic("audio/menu_bgm.wav", true)) {
+                        System.err.println("关卡完成背景音乐加载失败");
+                    }
+                } catch (Exception e) {
+                    System.err.println("播放关卡完成音频失败: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                System.err.println("播放关卡完成音效/音乐失败: " + e.getMessage());
-                // 出现异常时禁用所有音频
-                audioManager.disableAllAudio();
+                levelCompleteAudioPlayed = true;
             }
-            
             stage.setScene(levelCompleteScene);
         }
     }
@@ -1213,7 +1215,7 @@ public class GameView {
         // 添加移动和功能键位说明到水平布局
         controlsContentBox.getChildren().addAll(movementBox, actionBox);
         
-        // 将标题和内容添加到键位说明区域
+        // 将标题和统计信息位置添加到键位说明区域
         controlsBox.getChildren().addAll(controlsTitle, controlsContentBox);
         
         // 在底部添加ESC键使用提示
@@ -1679,8 +1681,7 @@ public class GameView {
         VBox textBox = new VBox(30);
         textBox.setAlignment(Pos.CENTER);
         textBox.getChildren().addAll(levelCompleteText, statsBox);
-        textBox.setTranslateY(-120);
-        
+         
         // 创建按钮面板
         VBox buttonBox = new VBox(15);
         buttonBox.setAlignment(Pos.CENTER);
@@ -1735,13 +1736,20 @@ public class GameView {
         
         // 组合按钮和背景
         StackPane buttonPane = new StackPane(buttonBg, buttonBox);
-        buttonPane.setTranslateY(50);
         
-        // 将所有元素添加到主布局
-        levelCompleteRoot.getChildren().addAll(background, playerTank, enemyTank, textBox, buttonPane);
+        // 使用 VBox 对文本和按钮进行垂直布局
+        VBox mainBox = new VBox(60, textBox, buttonPane);
+        mainBox.setAlignment(Pos.CENTER);
+        
+        // 将所有装饰元素和新的布局添加到主布局
+        levelCompleteRoot.getChildren().clear();
+        levelCompleteRoot.getChildren().addAll(background, playerTank, enemyTank, mainBox);
         
         // 创建场景
         levelCompleteScene = new Scene(levelCompleteRoot, GAME_WIDTH, GAME_HEIGHT);
+        
+        // 移除对键盘监听
+        levelCompleteScene.setOnKeyPressed(null);
     }
     
     /**
