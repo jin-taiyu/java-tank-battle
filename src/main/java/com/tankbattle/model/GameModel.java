@@ -177,9 +177,11 @@ public class GameModel {
      * @param levelConfig 关卡配置
      */
     private void loadWalls(LevelConfig levelConfig) {
+        // 清空现有墙体
+        walls.clear();
+        
+        // 如果没有墙体配置，直接返回（不创建任何墙体）
         if (levelConfig.getWalls() == null || levelConfig.getWalls().isEmpty()) {
-            // 如果没有墙体配置，使用默认墙体
-            generateWalls(levelConfig.getLevelNumber());
             return;
         }
         
@@ -216,9 +218,6 @@ public class GameModel {
         for (int i = 0; i < initialEnemies; i++) {
             spawnEnemyTank();
         }
-        
-        // 根据关卡生成不同的墙体布局
-        generateWalls(level);
     }
     
     /**
@@ -327,190 +326,6 @@ public class GameModel {
         }
         
         enemyTanks.add(enemyTank);
-    }
-    
-    /**
-     * 生成墙体
-     * 
-     * @param level 关卡编号，用于生成不同的墙体布局
-     */
-    private void generateWalls(int level) {
-        walls.clear();
-        
-        switch (level) {
-            case 1: // 第一关 - 简单布局
-                generateLevel1Walls();
-                break;
-            case 2: // 第二关 - 迷宫布局
-                generateLevel2Walls();
-                break;
-            case 3: // 第三关 - 复杂布局
-                generateLevel3Walls();
-                break;
-            default: // 更高关卡使用随机墙体
-                generateRandomWalls();
-                break;
-        }
-    }
-    
-    /**
-     * 生成第一关墙体 - 简单布局
-     */
-    private void generateLevel1Walls() {
-        // 左侧墙体
-        for (int i = 0; i < 5; i++) {
-            walls.add(new BrickWall(GRID_SIZE * 3, GRID_SIZE * (i + 2)));
-        }
-        
-        // 右侧墙体
-        for (int i = 0; i < 5; i++) {
-            walls.add(new BrickWall(GAME_WIDTH - GRID_SIZE * 4, GRID_SIZE * (i + 2)));
-        }
-        
-        // 中央钢墙
-        for (int i = 0; i < 3; i++) {
-            walls.add(new SteelWall(GAME_WIDTH / 2 - GRID_SIZE / 2, GAME_HEIGHT / 2 - GRID_SIZE + i * GRID_SIZE));
-        }
-        
-        // 玩家基地周围的墙
-        walls.add(new BrickWall(GAME_WIDTH / 2 - GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new BrickWall(GAME_WIDTH / 2, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new BrickWall(GAME_WIDTH / 2 + GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new BrickWall(GAME_WIDTH / 2 - GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 4));
-        walls.add(new BrickWall(GAME_WIDTH / 2 + GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 4));
-    }
-    
-    /**
-     * 生成第二关墙体 - 迷宫布局
-     */
-    private void generateLevel2Walls() {
-        // 上方横向墙体
-        for (int i = 0; i < 8; i++) {
-            walls.add(new BrickWall(GRID_SIZE * (i + 2), GRID_SIZE * 3));
-        }
-        
-        for (int i = 0; i < 8; i++) {
-            walls.add(new BrickWall(GRID_SIZE * (i + 11), GRID_SIZE * 3));
-        }
-        
-        // 中央迷宫
-        // 横向墙
-        for (int i = 0; i < 4; i++) {
-            walls.add(new BrickWall(GRID_SIZE * (i + 4), GAME_HEIGHT / 2));
-        }
-        
-        for (int i = 0; i < 4; i++) {
-            walls.add(new BrickWall(GRID_SIZE * (i + 13), GAME_HEIGHT / 2));
-        }
-        
-        // 纵向墙
-        for (int i = 0; i < 3; i++) {
-            walls.add(new BrickWall(GRID_SIZE * 7, GAME_HEIGHT / 2 - GRID_SIZE * (i + 1)));
-        }
-        
-        for (int i = 0; i < 3; i++) {
-            walls.add(new BrickWall(GAME_WIDTH - GRID_SIZE * 8, GAME_HEIGHT / 2 - GRID_SIZE * (i + 1)));
-        }
-        
-        // 钢墙屏障
-        for (int i = 0; i < 3; i++) {
-            walls.add(new SteelWall(GRID_SIZE * (i + 4), GAME_HEIGHT - GRID_SIZE * 7));
-            walls.add(new SteelWall(GAME_WIDTH - GRID_SIZE * (i + 5), GAME_HEIGHT - GRID_SIZE * 7));
-        }
-        
-        // 玩家基地周围的墙
-        walls.add(new SteelWall(GAME_WIDTH / 2 - GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new SteelWall(GAME_WIDTH / 2, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new SteelWall(GAME_WIDTH / 2 + GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new SteelWall(GAME_WIDTH / 2 - GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 4));
-        walls.add(new SteelWall(GAME_WIDTH / 2 + GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 4));
-    }
-    
-    /**
-     * 生成第三关墙体 - 复杂布局
-     */
-    private void generateLevel3Walls() {
-        // 上方复杂墙体
-        for (int i = 0; i < 10; i += 2) {
-            walls.add(new SteelWall(GRID_SIZE * (i + 1), GRID_SIZE * 2));
-            walls.add(new BrickWall(GRID_SIZE * (i + 2), GRID_SIZE * 2));
-        }
-        
-        // 中间走廊
-        for (int i = 0; i < 5; i++) {
-            walls.add(new BrickWall(GRID_SIZE * 5, GRID_SIZE * (i + 4)));
-            walls.add(new BrickWall(GAME_WIDTH - GRID_SIZE * 6, GRID_SIZE * (i + 4)));
-        }
-        
-        // 中央复杂区域
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                if ((i + j) % 2 == 0) {
-                    walls.add(new SteelWall(GAME_WIDTH / 2 - GRID_SIZE + i * GRID_SIZE, 
-                                           GAME_HEIGHT / 2 - GRID_SIZE + j * GRID_SIZE));
-                } else {
-                    walls.add(new BrickWall(GAME_WIDTH / 2 - GRID_SIZE + i * GRID_SIZE, 
-                                           GAME_HEIGHT / 2 - GRID_SIZE + j * GRID_SIZE));
-                }
-            }
-        }
-        
-        // 下方障碍
-        for (int i = 0; i < 8; i++) {
-            if (i % 3 != 1) { // 留下通道
-                walls.add(new SteelWall(GRID_SIZE * (i + 2), GAME_HEIGHT - GRID_SIZE * 6));
-                walls.add(new SteelWall(GAME_WIDTH - GRID_SIZE * (i + 3), GAME_HEIGHT - GRID_SIZE * 6));
-            }
-        }
-        
-        // 玩家基地周围的墙 - 全部使用钢墙
-        walls.add(new SteelWall(GAME_WIDTH / 2 - GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new SteelWall(GAME_WIDTH / 2, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new SteelWall(GAME_WIDTH / 2 + GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new SteelWall(GAME_WIDTH / 2 - GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 4));
-        walls.add(new SteelWall(GAME_WIDTH / 2 + GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 4));
-    }
-    
-    /**
-     * 生成随机墙体 - 用于更高级别的关卡
-     */
-    private void generateRandomWalls() {
-        // 确保基地周围有保护
-        walls.add(new SteelWall(GAME_WIDTH / 2 - GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new SteelWall(GAME_WIDTH / 2, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new SteelWall(GAME_WIDTH / 2 + GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 3));
-        walls.add(new SteelWall(GAME_WIDTH / 2 - GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 4));
-        walls.add(new SteelWall(GAME_WIDTH / 2 + GRID_SIZE, GAME_HEIGHT - GRID_SIZE * 4));
-        
-        // 随机生成砖墙
-        int brickWallCount = 40 + random.nextInt(20); // 40-60个砖墙
-        for (int i = 0; i < brickWallCount; i++) {
-            int x = (random.nextInt((GAME_WIDTH / GRID_SIZE) - 2) + 1) * GRID_SIZE;
-            int y = (random.nextInt((GAME_HEIGHT / GRID_SIZE) - 6) + 1) * GRID_SIZE;
-            
-            // 避免在玩家出生点附近生成
-            if (Math.abs(x - GAME_WIDTH / 2) < GRID_SIZE * 2 && 
-                Math.abs(y - (GAME_HEIGHT - GRID_SIZE * 2)) < GRID_SIZE * 2) {
-                continue;
-            }
-            
-            walls.add(new BrickWall(x, y));
-        }
-        
-        // 随机生成钢墙
-        int steelWallCount = 10 + random.nextInt(10); // 10-20个钢墙
-        for (int i = 0; i < steelWallCount; i++) {
-            int x = (random.nextInt((GAME_WIDTH / GRID_SIZE) - 2) + 1) * GRID_SIZE;
-            int y = (random.nextInt((GAME_HEIGHT / GRID_SIZE) - 6) + 1) * GRID_SIZE;
-            
-            // 避免在玩家出生点附近生成
-            if (Math.abs(x - GAME_WIDTH / 2) < GRID_SIZE * 2 && 
-                Math.abs(y - (GAME_HEIGHT - GRID_SIZE * 2)) < GRID_SIZE * 2) {
-                continue;
-            }
-            
-            walls.add(new SteelWall(x, y));
-        }
     }
     
     /**
