@@ -1,124 +1,38 @@
 {
   "levelNumber": 3,
-  "levelName": "第3关",
-  "enemyTankCount": 14,
+  "levelName": "迂回前进",
+  "enemyTankCount": 12,
   "walls": [
-    {
-      "x": 250,
-      "y": 300,
-      "width": 40,
-      "height": 40,
-      "type": "brick"
-    },
-    {
-      "x": 290,
-      "y": 300,
-      "width": 40,
-      "height": 40,
-      "type": "brick"
-    },
-    {
-      "x": 330,
-      "y": 300,
-      "width": 40,
-      "height": 40,
-      "type": "brick"
-    },
-    {
-      "x": 450,
-      "y": 300,
-      "width": 40,
-      "height": 40,
-      "type": "brick"
-    },
-    {
-      "x": 490,
-      "y": 300,
-      "width": 40,
-      "height": 40,
-      "type": "brick"
-    },
-    {
-      "x": 530,
-      "y": 300,
-      "width": 40,
-      "height": 40,
-      "type": "brick"
-    },
-    {
-      "x": 370,
-      "y": 250,
-      "width": 40,
-      "height": 40,
-      "type": "steel"
-    },
-    {
-      "x": 410,
-      "y": 250,
-      "width": 40,
-      "height": 40,
-      "type": "steel"
-    },
-    {
-      "x": 200,
-      "y": 200,
-      "width": 40,
-      "height": 40,
-      "type": "steel"
-    },
-    {
-      "x": 200,
-      "y": 400,
-      "width": 40,
-      "height": 40,
-      "type": "brick"
-    },
-    {
-      "x": 300,
-      "y": 200,
-      "width": 40,
-      "height": 40,
-      "type": "steel"
-    },
-    {
-      "x": 300,
-      "y": 400,
-      "width": 40,
-      "height": 40,
-      "type": "brick"
-    },
-    {
-      "x": 400,
-      "y": 200,
-      "width": 40,
-      "height": 40,
-      "type": "steel"
-    },
-    {
-      "x": 400,
-      "y": 400,
-      "width": 40,
-      "height": 40,
-      "type": "brick"
-    }
+    { "x": 100, "y": 520, "width": 40, "height": 40, "type": "steel" },
+    { "x": 100, "y": 480, "width": 40, "height": 40, "type": "steel" },
+    { "x": 60, "y": 480, "width": 40, "height": 40, "type": "brick" },
+    { "x": 20, "y": 480, "width": 40, "height": 40, "type": "brick" },
+    { "x": 200, "y": 400, "width": 40, "height": 40, "type": "brick" },
+    { "x": 240, "y": 400, "width": 40, "height": 40, "type": "brick" },
+    { "x": 280, "y": 400, "width": 40, "height": 40, "type": "brick" },
+    { "x": 240, "y": 360, "width": 40, "height": 40, "type": "steel" },
+    { "x": 400, "y": 100, "width": 40, "height": 40, "type": "steel" },
+    { "x": 400, "y": 140, "width": 40, "height": 40, "type": "steel" },
+    { "x": 400, "y": 180, "width": 40, "height": 40, "type": "steel" },
+    { "x": 440, "y": 140, "width": 40, "height": 40, "type": "brick" },
+    { "x": 360, "y": 140, "width": 40, "height": 40, "type": "brick" },
+    { "x": 560, "y": 280, "width": 40, "height": 40, "type": "steel" },
+    { "x": 600, "y": 280, "width": 40, "height": 40, "type": "steel" },
+    { "x": 640, "y": 280, "width": 40, "height": 40, "type": "steel" },
+    { "x": 600, "y": 320, "width": 40, "height": 40, "type": "brick" },
+    { "x": 600, "y": 240, "width": 40, "height": 40, "type": "brick" },
+    { "x": 120, "y": 120, "width": 40, "height": 40, "type": "brick" },
+    { "x": 160, "y": 120, "width": 40, "height": 40, "type": "brick" }
   ],
   "playerSpawn": {
-    "x": 400,
-    "y": 500
+    "x": 60,
+    "y": 520
   },
   "enemySpawns": [
-    {
-      "x": 100,
-      "y": 100
-    },
-    {
-      "x": 400,
-      "y": 100
-    },
-    {
-      "x": 700,
-      "y": 100
-    }
+    { "x": 700, "y": 40 },
+    { "x": 400, "y": 40 },
+    { "x": 100, "y": 200 },
+    { "x": 700, "y": 300 }
   ],
   "additionalProperties": {}
 }
