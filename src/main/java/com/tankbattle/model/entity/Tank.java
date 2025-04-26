@@ -18,6 +18,11 @@ public abstract class Tank extends GameObject {
     protected double shootCooldown;
     protected double currentCooldown;
     
+    // 加速度相关参数
+    protected double currentSpeed; // 当前实际速度
+    protected double acceleration; // 加速度
+    protected double deceleration; // 减速度
+    
     // 游戏区域宽高（用于边界检查）
     private static final int GAME_WIDTH = 800;
     private static final int GAME_HEIGHT = 600;
@@ -35,7 +40,10 @@ public abstract class Tank extends GameObject {
         this.health = 1;
         this.shootCooldown = 0.5; // 默认射击冷却时间为0.5秒
         this.currentCooldown = 0;
-        this.speed = 100; // 默认速度
+        this.speed = 100; // 最大速度
+        this.currentSpeed = 0; // 初始实际速度为0
+        this.acceleration = 350; // 加速度，单位为像素/秒²
+        this.deceleration = 350; // 减速度，单位为像素/秒²
         this.width = 40; // 默认宽度
         this.height = 40; // 默认高度
     }
@@ -47,9 +55,20 @@ public abstract class Tank extends GameObject {
             currentCooldown -= deltaTime;
         }
         
-        // 如果坦克正在移动，则更新位置
-        if (moving && alive) {
-            move(deltaTime);
+        // 更新坦克速度
+        if (alive) {
+            if (moving) {
+                // 如果正在移动，逐渐加速到最大速度
+                currentSpeed = Math.min(currentSpeed + acceleration * deltaTime, speed);
+            } else {
+                // 如果不在移动，逐渐减速到0
+                currentSpeed = Math.max(currentSpeed - deceleration * deltaTime, 0);
+            }
+            
+            // 只要还有速度，就继续移动（即使已经停止按键）
+            if (currentSpeed > 0) {
+                move(deltaTime);
+            }
         }
     }
     
@@ -66,21 +85,29 @@ public abstract class Tank extends GameObject {
         double oldX = x;
         double oldY = y;
         
-        // 计算新位置
-        double newX = x + direction.getDx() * speed * deltaTime;
-        double newY = y + direction.getDy() * speed * deltaTime;
+        // 使用当前实际速度计算新位置，而不是最大速度
+        double newX = x + direction.getDx() * currentSpeed * deltaTime;
+        double newY = y + direction.getDy() * currentSpeed * deltaTime;
         
         // 边界检查
         if (newX < 0) {
             newX = 0;
+            // 撞墙时减速
+            currentSpeed *= 0.8;
         } else if (newX > GAME_WIDTH - width) {
             newX = GAME_WIDTH - width;
+            // 撞墙时减速
+            currentSpeed *= 0.8;
         }
         
         if (newY < 0) {
             newY = 0;
+            // 撞墙时减速
+            currentSpeed *= 0.8;
         } else if (newY > GAME_HEIGHT - height) {
             newY = GAME_HEIGHT - height;
+            // 撞墙时减速
+            currentSpeed *= 0.8;
         }
         
         // 更新坦克位置
