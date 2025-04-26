@@ -232,4 +232,52 @@ public class PlayerTank extends Tank {
     public double getPowerUpTime() {
         return powerUpTime;
     }
+    
+    /**
+     * 检查玩家是否有火力增强
+     * @return 是否有火力增强
+     */
+    public boolean isPowered() {
+        return hasPowerUp;
+    }
+    
+    /**
+     * 设置玩家火力增强状态
+     * @param powered 是否有火力增强
+     */
+    public void setPowered(boolean powered) {
+        this.hasPowerUp = powered;
+    }
+    
+    /**
+     * 检查玩家是否有护盾
+     * @return 是否有护盾
+     */
+    public boolean isShielded() {
+        return hasShield;
+    }
+    
+    /**
+     * 设置玩家护盾状态
+     * @param shielded 是否有护盾
+     */
+    public void setShielded(boolean shielded) {
+        this.hasShield = shielded;
+    }
+    
+    /**
+     * 检查玩家是否有速度提升
+     * @return 是否有速度提升
+     */
+    public boolean isSpeedBoosted() {
+        return hasSpeedBoost;
+    }
+    
+    /**
+     * 设置玩家速度提升状态
+     * @param speedBoosted 是否有速度提升
+     */
+    public void setSpeedBoosted(boolean speedBoosted) {
+        this.hasSpeedBoost = speedBoosted;
+    }
 }

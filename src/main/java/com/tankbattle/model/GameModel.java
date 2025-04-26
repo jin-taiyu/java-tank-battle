@@ -16,6 +16,10 @@ import com.tankbattle.model.entity.Item;
 import com.tankbattle.model.enums.Direction;
 import com.tankbattle.model.enums.GameState;
 import com.tankbattle.model.enums.ItemType;
+import com.tankbattle.model.level.LevelConfig;
+import com.tankbattle.model.level.LevelManager;
+import com.tankbattle.model.save.GameSave;
+import com.tankbattle.model.save.SaveManager;
 
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -55,6 +59,10 @@ public class GameModel {
     private double itemSpawnTimer = 0;
     private static final double ITEM_SPAWN_INTERVAL = 15.0; // 每15秒尝试自动生成一个道具
     
+    // 关卡和存档管理器
+    private LevelManager levelManager;
+    private SaveManager saveManager;
+    
     /**
      * 构造函数
      */
@@ -67,6 +75,10 @@ public class GameModel {
         this.bullets = new ArrayList<>();
         this.walls = new ArrayList<>();
         this.items = new ArrayList<>();
+        
+        // 初始化关卡管理器和存档管理器
+        this.levelManager = LevelManager.getInstance();
+        this.saveManager = SaveManager.getInstance();
     }
     
     /**
@@ -89,6 +101,9 @@ public class GameModel {
         // 重置道具生成计时器
         this.itemSpawnTimer = 0;
         
+        // 设置关卡管理器的当前关卡
+        levelManager.setCurrentLevelByNumber(level.get());
+        
         // 加载关卡
         loadLevel(level.get());
         
@@ -99,14 +114,90 @@ public class GameModel {
     /**
      * 加载关卡
      * 
-     * @param level 关卡编号
+     * @param levelNumber 关卡编号
      */
-    public void loadLevel(int level) {
+    public void loadLevel(int levelNumber) {
         // 清空现有敌人、子弹和道具
         this.enemyTanks.clear();
         this.bullets.clear();
         this.items.clear();
+        this.walls.clear();
         
+        // 从关卡管理器获取关卡配置
+        LevelConfig levelConfig = levelManager.getCurrentLevel();
+        if (levelConfig == null) {
+            // 如果没有找到关卡配置，使用默认配置
+            generateDefaultLevel(levelNumber);
+            return;
+        }
+        
+        // 设置关卡敌人数量
+        this.remainingEnemies.set(levelConfig.getEnemyTankCount());
+        
+        // 初始生成的敌人数量
+        int initialEnemies = Math.min(4, this.remainingEnemies.get());
+        
+        // 加载墙体
+        loadWalls(levelConfig);
+        
+        // 设置玩家出生点
+        if (levelConfig.getPlayerSpawn() != null) {
+            this.playerTank.setX(levelConfig.getPlayerSpawn().getX());
+            this.playerTank.setY(levelConfig.getPlayerSpawn().getY());
+        }
+        
+        // 生成敌人坦克
+        for (int i = 0; i < initialEnemies; i++) {
+            if (levelConfig.getEnemySpawns() != null && !levelConfig.getEnemySpawns().isEmpty()) {
+                // 使用配置中的敌人出生点
+                int index = i % levelConfig.getEnemySpawns().size();
+                LevelConfig.EnemySpawnConfig spawnConfig = levelConfig.getEnemySpawns().get(index);
+                spawnEnemyTank(spawnConfig.getX(), spawnConfig.getY());
+            } else {
+                // 使用默认出生点
+                spawnEnemyTank();
+            }
+        }
+        
+        // 如果是第2关以上，在关卡开始时生成一个道具
+        if (levelNumber >= 2) {
+            spawnRandomItem();
+        }
+    }
+    
+    /**
+     * 从关卡配置加载墙体
+     * 
+     * @param levelConfig 关卡配置
+     */
+    private void loadWalls(LevelConfig levelConfig) {
+        if (levelConfig.getWalls() == null || levelConfig.getWalls().isEmpty()) {
+            // 如果没有墙体配置，使用默认墙体
+            generateWalls(levelConfig.getLevelNumber());
+            return;
+        }
+        
+        // 根据配置创建墙体
+        for (LevelConfig.WallConfig wallConfig : levelConfig.getWalls()) {
+            Wall wall;
+            if ("steel".equals(wallConfig.getType())) {
+                wall = new SteelWall(wallConfig.getX(), wallConfig.getY());
+            } else {
+                // 默认为砖墙
+                wall = new BrickWall(wallConfig.getX(), wallConfig.getY());
+            }
+            wall.setWidth(wallConfig.getWidth() > 0 ? wallConfig.getWidth() : GRID_SIZE);
+            wall.setHeight(wallConfig.getHeight() > 0 ? wallConfig.getHeight() : GRID_SIZE);
+            walls.add(wall);
+        }
+    }
+    
+    /**
+     * 生成默认关卡配置（兼容旧版本）
+     * 
+     * @param level 关卡编号
+     */
+    private void generateDefaultLevel(int level) {
         // 设置关卡敌人数量（随关卡增加）
         this.remainingEnemies.set(10 + (level - 1) * 2);
         
@@ -120,31 +211,36 @@ public class GameModel {
         
         // 根据关卡生成不同的墙体布局
         generateWalls(level);
-        
-        // 如果是第2关以上，在关卡开始时生成一个道具
-        if (level >= 2) {
-            spawnRandomItem();
-        }
     }
     
     /**
      * 进入下一关
      */
     public void nextLevel() {
-        // 增加关卡
-        this.level.set(this.level.get() + 1);
+        // 使用关卡管理器切换到下一关
+        LevelConfig nextLevelConfig = levelManager.nextLevel();
         
-        // 重置玩家坦克位置
-        this.playerTank.respawn(GAME_WIDTH / 2, GAME_HEIGHT - GRID_SIZE * 2, Direction.UP);
-        
-        // 加载新关卡
-        loadLevel(this.level.get());
-        
-        // 播放关卡开始音效
-        AudioManager.getInstance().playSoundEffect("game_start");
-        
-        // 设置游戏状态为运行中
-        this.gameState = GameState.RUNNING;
+        if (nextLevelConfig != null) {
+            // 增加关卡
+            this.level.set(this.level.get() + 1);
+            
+            // 重置玩家坦克位置
+            this.playerTank.respawn(GAME_WIDTH / 2, GAME_HEIGHT - GRID_SIZE * 2, Direction.UP);
+            
+            // 加载新关卡
+            loadLevel(this.level.get());
+            
+            // 播放关卡开始音效
+            AudioManager.getInstance().playSoundEffect("game_start");
+            
+            // 设置游戏状态为运行中
+            this.gameState = GameState.RUNNING;
+        } else {
+            // 如果没有下一关，则游戏胜利
+            this.gameState = GameState.VICTORY;
+            AudioManager.getInstance().stopBackgroundMusic();
+            AudioManager.getInstance().playBackgroundMusic("victory_bgm.wav", true);
+        }
     }
     
     /**
@@ -186,6 +282,29 @@ public class GameModel {
             }
         } while (collision);
         
+        // 根据关卡难度创建不同类型的敌人坦克
+        Direction direction = Direction.values()[random.nextInt(Direction.values().length)];
+        EnemyTank enemyTank = new EnemyTank(x, y, direction);
+        
+        // 根据关卡提升敌人坦克属性
+        int currentLevel = level.get();
+        if (currentLevel >= 2) {
+            enemyTank.setSpeed(enemyTank.getSpeed() * (1.0 + currentLevel * 0.1)); // 每关速度提升10%
+        }
+        if (currentLevel >= 3) {
+            enemyTank.setShootCooldown(enemyTank.getShootCooldown() * 0.8); // 第3关开始射速提升20%
+        }
+        
+        enemyTanks.add(enemyTank);
+    }
+    
+    /**
+     * 在指定位置生成敌人坦克
+     * 
+     * @param x 坦克X坐标
+     * @param y 坦克Y坐标
+     */
+    public void spawnEnemyTank(int x, int y) {
         // 根据关卡难度创建不同类型的敌人坦克
         Direction direction = Direction.values()[random.nextInt(Direction.values().length)];
         EnemyTank enemyTank = new EnemyTank(x, y, direction);
@@ -867,6 +986,96 @@ public class GameModel {
      */
     public void resetGame() {
         initGame();
+    }
+    
+    /**
+     * 保存游戏
+     * 
+     * @param saveName 存档名称，如果为null则自动生成
+     * @return 是否保存成功
+     */
+    public boolean saveGame(String saveName) {
+        // 创建游戏存档对象
+        GameSave gameSave = new GameSave();
+        
+        // 设置存档名称
+        gameSave.setSaveName(saveName);
+        
+        // 保存游戏核心数据
+        gameSave.setLevelNumber(level.get());
+        gameSave.setScore(score.get());
+        gameSave.setPlayerLives(playerTank.getLives());
+        
+        // 保存玩家状态
+        gameSave.setHasPowerUp(playerTank.isPowered());
+        gameSave.setHasShield(playerTank.isShielded());
+        gameSave.setHasSpeedBoost(playerTank.isSpeedBoosted());
+        
+        // 使用存档管理器保存游戏
+        return saveManager.saveGame(gameSave);
+    }
+    
+    /**
+     * 加载游戏
+     * 
+     * @param saveName 存档名称
+     * @return 是否加载成功
+     */
+    public boolean loadGame(String saveName) {
+        // 使用存档管理器加载游戏
+        GameSave gameSave = saveManager.loadGame(saveName);
+        
+        if (gameSave == null) {
+            return false;
+        }
+        
+        // 恢复游戏核心数据
+        this.level.set(gameSave.getLevelNumber());
+        this.score.set(gameSave.getScore());
+        
+        // 初始化并设置玩家坦克
+        this.playerTank = new PlayerTank(GAME_WIDTH / 2, GAME_HEIGHT - GRID_SIZE * 2, Direction.UP);
+        this.playerTank.setLives(gameSave.getPlayerLives());
+        
+        // 恢复玩家状态
+        if (gameSave.isHasPowerUp()) {
+            playerTank.setPowered(true);
+        }
+        if (gameSave.isHasShield()) {
+            playerTank.setShielded(true);
+        }
+        if (gameSave.isHasSpeedBoost()) {
+            playerTank.setSpeedBoosted(true);
+        }
+        
+        // 清空并初始化敌人坦克、子弹、墙体和道具
+        this.enemyTanks.clear();
+        this.bullets.clear();
+        this.walls.clear();
+        this.items.clear();
+        
+        // 重置道具生成计时器
+        this.itemSpawnTimer = 0;
+        
+        // 设置关卡管理器的当前关卡
+        levelManager.setCurrentLevelByNumber(level.get());
+        
+        // 加载关卡
+        loadLevel(level.get());
+        
+        // 设置游戏状态为运行中
+        this.gameState = GameState.RUNNING;
+        
+        return true;
+    }
+    
+    /**
+     * 获取所有存档
+     * 
+     * @return 存档列表
+     */
+    public List<GameSave> getAllSaves() {
+        return saveManager.getAllSaves();
     }
     
     // Getter方法

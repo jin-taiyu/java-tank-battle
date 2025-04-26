@@ -6,6 +6,9 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Alert;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
@@ -19,6 +22,13 @@ import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import com.tankbattle.model.save.GameSave;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
@@ -483,6 +493,17 @@ public class GameView {
             startGame();
         });
         
+        // 创建加载游戏按钮
+        Button loadButton = createStyledButton("加载游戏", 200, 50);
+        loadButton.setOnAction(e -> {
+            try {
+                audioManager.playSoundEffect("button_click");
+            } catch (Exception ex) {
+                System.err.println("播放按钮音效失败: " + ex.getMessage());
+            }
+            loadGame();
+        });
+        
         // 创建玩法说明按钮
         Button helpButton = createStyledButton("玩法说明", 200, 50);
         helpButton.setOnAction(e -> {
@@ -506,10 +527,10 @@ public class GameView {
         });
         
         // 添加按钮到菜单选项面板
-        menuOptionsBox.getChildren().addAll(levelSelectorBox, startButton, helpButton, exitButton);
+        menuOptionsBox.getChildren().addAll(levelSelectorBox, startButton, loadButton, helpButton, exitButton);
         
         // 创建半透明面板作为菜单选项的背景
-        Rectangle menuBg = new Rectangle(400, 300); // 加大高度以适应新增的按钮
+        Rectangle menuBg = new Rectangle(400, 350); // 加大高度以适应新增的按钮
         menuBg.setFill(Color.rgb(0, 0, 0, 0.7));
         menuBg.setArcWidth(20);
         menuBg.setArcHeight(20);
@@ -1658,6 +1679,7 @@ public class GameView {
         VBox textBox = new VBox(30);
         textBox.setAlignment(Pos.CENTER);
         textBox.getChildren().addAll(levelCompleteText, statsBox);
+        textBox.setTranslateY(-120);
         
         // 创建按钮面板
         VBox buttonBox = new VBox(15);
@@ -1676,6 +1698,19 @@ public class GameView {
             nextLevel();
         });
         
+        // 创建保存游戏按钮
+        Button saveGameButton = createStyledButton("保存游戏", 200, 50);
+        saveGameButton.setOnAction(e -> {
+            try {
+                audioManager.playSoundEffect("button_click");
+                
+                // 保存游戏逻辑将在任务3中实现
+                saveGame();
+            } catch (Exception ex) {
+                System.err.println("播放按钮音效或保存游戏失败: " + ex.getMessage());
+            }
+        });
+        
         // 创建返回主菜单按钮
         Button menuButton = createStyledButton("返回主菜单", 200, 50);
         menuButton.setOnAction(e -> {
@@ -1688,10 +1723,10 @@ public class GameView {
         });
         
         // 添加按钮到面板
-        buttonBox.getChildren().addAll(nextLevelButton, menuButton);
+        buttonBox.getChildren().addAll(nextLevelButton, saveGameButton, menuButton);
         
         // 创建半透明面板作为按钮的背景
-        Rectangle buttonBg = new Rectangle(300, 150);
+        Rectangle buttonBg = new Rectangle(300, 200); // 增加高度以适应新按钮
         buttonBg.setFill(Color.rgb(0, 0, 0, 0.7));
         buttonBg.setArcWidth(20);
         buttonBg.setArcHeight(20);
@@ -1707,5 +1742,89 @@ public class GameView {
         
         // 创建场景
         levelCompleteScene = new Scene(levelCompleteRoot, GAME_WIDTH, GAME_HEIGHT);
+    }
+    
+    /**
+     * 保存游戏状态
+     */
+    private void saveGame() {
+        // 创建一个文本输入对话框
+        TextInputDialog dialog = new TextInputDialog("存档_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()));
+        dialog.setTitle("保存游戏");
+        dialog.setHeaderText("请输入存档名称");
+        dialog.setContentText("存档名称:");
+        
+        // 获取用户输入
+        Optional<String> result = dialog.showAndWait();
+        
+        if (result.isPresent() && !result.get().trim().isEmpty()) {
+            String saveName = result.get().trim();
+            
+            // 调用GameModel的saveGame方法保存游戏
+            boolean success = gameModel.saveGame(saveName);
+            
+            // 显示保存结果
+            Alert alert = new Alert(success ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR);
+            alert.setTitle("保存游戏");
+            alert.setHeaderText(success ? "保存成功" : "保存失败");
+            alert.setContentText(success ? "游戏进度已保存！" : "保存游戏时出现错误，请重试。");
+            alert.showAndWait();
+        }
+    }
+    
+    /**
+     * 加载游戏存档
+     */
+    private void loadGame() {
+        // 获取所有存档
+        List<GameSave> saves = gameModel.getAllSaves();
+        
+        if (saves.isEmpty()) {
+            // 如果没有存档，显示提示信息
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("加载游戏");
+            alert.setHeaderText("没有可用的存档");
+            alert.setContentText("请先创建一个游戏存档。");
+            alert.showAndWait();
+            return;
+        }
+        
+        // 创建存档选择对话框
+        ChoiceDialog<GameSave> dialog = new ChoiceDialog<>(saves.get(0), saves);
+        dialog.setTitle("加载游戏");
+        dialog.setHeaderText("请选择一个存档");
+        dialog.setContentText("存档:");
+        
+        // 设置单元格工厂，自定义显示存档信息
+        dialog.getItems().setAll(saves);
+        
+        // 获取用户选择
+        Optional<GameSave> result = dialog.showAndWait();
+        
+        if (result.isPresent()) {
+            GameSave selectedSave = result.get();
+            
+            // 调用GameModel的loadGame方法加载游戏
+            boolean success = gameModel.loadGame(selectedSave.getSaveName());
+            
+            if (success) {
+                // 直接更新游戏界面状态
+                showGameScene();
+                
+                // 播放游戏开始音效
+                try {
+                    audioManager.playSoundEffect("game_start");
+                } catch (Exception ex) {
+                    System.err.println("播放音效失败: " + ex.getMessage());
+                }
+            } else {
+                // 显示加载失败信息
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("加载游戏");
+                alert.setHeaderText("加载失败");
+                alert.setContentText("无法加载选定的存档，请重试。");
+                alert.showAndWait();
+            }
+        }
     }
 }

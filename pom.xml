@@ -58,6 +58,13 @@
             <version>1.17</version>
             <scope>compile</scope>
         </dependency>
+        
+        <!-- JSON 解析支持 -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
     </dependencies>
 
     <build>
