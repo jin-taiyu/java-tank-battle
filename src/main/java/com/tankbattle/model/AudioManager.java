@@ -21,13 +21,12 @@ public class AudioManager {
     // 背景音乐播放器
     private MediaPlayer bgmPlayer;
     
-    // 音频开关
-    private boolean soundEnabled = true;
-    private boolean musicEnabled = true;
+    // 全局音量（0.0-1.0），0为静音
+    private double globalVolume = 0.0;
     
     // 错误跟踪
     private boolean hasLoadingError = false;
-    
+
     // 单例实例
     private static AudioManager instance;
     
@@ -54,8 +53,6 @@ public class AudioManager {
             System.err.println("音频初始化失败: " + e.getMessage());
             hasLoadingError = true;
             // 设置为false以防止进一步尝试加载音频
-            soundEnabled = false;
-            musicEnabled = false;
         }
     }
     
@@ -113,7 +110,7 @@ public class AudioManager {
      * @return 是否成功播放
      */
     public boolean playSoundEffect(String name) {
-        if (!soundEnabled || hasLoadingError) return false;
+        if (hasLoadingError) return false;
         
         try {
             AudioClip clip = soundEffects.get(name);
@@ -129,7 +126,8 @@ public class AudioManager {
             }
             
             if (clip != null) {
-                clip.play();
+                // 使用全局音量播放音效
+                clip.play(globalVolume);
                 return true;
             }
             return false;
@@ -143,7 +141,7 @@ public class AudioManager {
     private String currentBgmPath;
 
     public boolean playBackgroundMusic(String path, boolean loop) {
-        if (!musicEnabled || hasLoadingError) return false;
+        if (hasLoadingError) return false;
 
         // 重复播放同一路径时直接返回
         if (currentBgmPath != null && currentBgmPath.equals(path) && bgmPlayer != null) {
@@ -187,12 +185,13 @@ public class AudioManager {
                     if (loop) {
                         bgmPlayer.setCycleCount(MediaPlayer.INDEFINITE);
                     }
-                    bgmPlayer.setVolume(0.6);
-                    // 直接播放背景音乐，同步调用，避免创建额外线程
-                    bgmPlayer.play();
-                    // 记录当前播放路径
-                    currentBgmPath = path;
-                    return true;
+                    // 根据全局音量设置背景音乐音量
+                    bgmPlayer.setVolume(globalVolume);
+                 // 直接播放背景音乐，同步调用，避免创建额外线程
+                 bgmPlayer.play();
+                 // 记录当前播放路径
+                 currentBgmPath = path;
+                 return true;
                 } catch (Exception e) {
                     System.out.println("背景音乐创建失败: " + path + ", 错误: " + e.getMessage());
                     return false;
@@ -229,44 +228,23 @@ public class AudioManager {
     }
     
     /**
-     * 设置音效开关
-     * 
-     * @param enabled 是否启用
+     * 设置全局音量，0为静音
+     * @param volume 范围0.0-1.0
      */
-    public void setSoundEnabled(boolean enabled) {
-        this.soundEnabled = enabled;
-    }
-    
-    /**
-     * 设置音乐开关
-     * 
-     * @param enabled 是否启用
-     */
-    public void setMusicEnabled(boolean enabled) {
-        this.musicEnabled = enabled;
-        if (!enabled && bgmPlayer != null) {
-            bgmPlayer.stop();
-        } else if (enabled && bgmPlayer != null) {
-            bgmPlayer.play();
+    public void setGlobalVolume(double volume) {
+        this.globalVolume = Math.max(0, Math.min(1, volume));
+        // 调整当前背景音乐音量
+        if (bgmPlayer != null) {
+            bgmPlayer.setVolume(this.globalVolume);
         }
     }
-    
+
     /**
-     * 获取音效开关状态
-     * 
-     * @return 是否启用音效
+     * 获取当前全局音量
+     * @return 音量范围0.0-1.0
      */
-    public boolean isSoundEnabled() {
-        return soundEnabled;
-    }
-    
-    /**
-     * 获取音乐开关状态
-     * 
-     * @return 是否启用音乐
-     */
-    public boolean isMusicEnabled() {
-        return musicEnabled;
+    public double getGlobalVolume() {
+        return this.globalVolume;
     }
     
     /**
@@ -274,9 +252,6 @@ public class AudioManager {
      * 在检测到致命音频问题时使用
      */
     public void disableAllAudio() {
-        soundEnabled = false;
-        musicEnabled = false;
-        hasLoadingError = true;
         stopBackgroundMusic();
     }
 }

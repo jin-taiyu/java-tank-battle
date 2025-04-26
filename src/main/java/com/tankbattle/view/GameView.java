@@ -3,12 +3,7 @@ package com.tankbattle.view;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Alert;
-import javafx.scene.control.TextInputDialog;
-import javafx.scene.control.ChoiceDialog;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
@@ -83,6 +78,7 @@ public class GameView {
     private Scene pauseScene;
     private Scene helpScene;
     private Scene levelCompleteScene;
+    private Scene musicSettingsScene;
     private Canvas gameCanvas;
     private GraphicsContext gc;
     
@@ -169,6 +165,9 @@ public class GameView {
         
         // 创建帮助场景
         createHelpScene();
+        
+        // 创建音乐设置场景
+        createMusicSettingsScene();
         
         // 创建关卡完成场景
         createLevelCompleteScene();
@@ -520,6 +519,13 @@ public class GameView {
             showHelpScene();
         });
         
+        // 创建音乐设置按钮
+        Button musicButton = createStyledButton("音乐设置", 200, 50);
+        musicButton.setOnAction(e -> {
+            try { audioManager.playSoundEffect("button_click"); } catch (Exception ex) { System.err.println("播放按钮音效失败: " + ex.getMessage()); }
+            showMusicSettingsScene();
+        });
+        
         // 创建退出游戏按钮
         Button exitButton = createStyledButton("退出游戏", 200, 50);
         exitButton.setOnAction(e -> {
@@ -532,7 +538,7 @@ public class GameView {
         });
         
         // 添加按钮到菜单选项面板
-        menuOptionsBox.getChildren().addAll(levelSelectorBox, startButton, loadButton, helpButton, exitButton);
+        menuOptionsBox.getChildren().addAll(levelSelectorBox, startButton, loadButton, helpButton, musicButton, exitButton);
         
         // 创建半透明面板作为菜单选项的背景
         Rectangle menuBg = new Rectangle(400, 350); // 加大高度以适应新增的按钮
@@ -1736,7 +1742,6 @@ public class GameView {
         buttonBg.setArcWidth(20);
         buttonBg.setArcHeight(20);
         buttonBg.setStroke(Color.LIGHTBLUE);
-        buttonBg.setStrokeWidth(2);
         
         // 组合按钮和背景
         StackPane buttonPane = new StackPane(buttonBg, buttonBox);
@@ -1838,5 +1843,79 @@ public class GameView {
                 alert.showAndWait();
             }
         }
+    }
+    
+    /**
+     * 创建音乐设置场景
+     */
+    private void createMusicSettingsScene() {
+        StackPane root = new StackPane();
+        Rectangle background = new Rectangle(GAME_WIDTH, GAME_HEIGHT);
+        background.setFill(Color.rgb(20, 40, 60));
+        
+        Text title = new Text("背景音乐设置");
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 46));
+        title.setFill(Color.WHITE);
+        title.setStroke(Color.BLACK);
+        title.setStrokeWidth(2);
+        Glow glow = new Glow(0.6);
+        DropShadow shadow = new DropShadow();
+        shadow.setColor(Color.LIGHTBLUE);
+        shadow.setRadius(15);
+        shadow.setInput(glow);
+        title.setEffect(shadow);
+        
+        Label sliderLabel = new Label("音量:");
+        sliderLabel.setTextFill(Color.WHITE);
+        // 使用全局音量初始化滑块（0-100）
+        double initialVol = audioManager.getGlobalVolume() * 100;
+        Slider volumeSlider = new Slider(0, 100, initialVol);
+        volumeSlider.setShowTickLabels(true);
+        volumeSlider.setShowTickMarks(true);
+        volumeSlider.setMajorTickUnit(25);
+        volumeSlider.setBlockIncrement(5);
+        HBox sliderBox = new HBox(10, sliderLabel, volumeSlider);
+        sliderBox.setAlignment(Pos.CENTER);
+ 
+        // 滑块监听：统一设置全局音量，0即静音，100最大音量
+        volumeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            double vol = newVal.doubleValue() / 100.0;
+            audioManager.setGlobalVolume(vol);
+        });
+        
+        Button backButton = createStyledButton("返回主菜单", 200, 50);
+        backButton.setOnAction(e -> {
+            try { audioManager.playSoundEffect("button_click"); } catch (Exception ex) { System.err.println("播放按钮音效失败: " + ex.getMessage()); }
+            showMainMenu();
+        });
+        
+        VBox content = new VBox(30, title, sliderBox, backButton);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20));
+        
+        Rectangle panelBg = new Rectangle(GAME_WIDTH - 80, GAME_HEIGHT - 80);
+        panelBg.setFill(Color.rgb(0, 0, 0, 0.7));
+        panelBg.setArcWidth(20);
+        panelBg.setArcHeight(20);
+        panelBg.setStroke(Color.LIGHTBLUE);
+        
+        StackPane panelPane = new StackPane(panelBg, content);
+        root.getChildren().addAll(background, panelPane);
+        
+        musicSettingsScene = new Scene(root, GAME_WIDTH, GAME_HEIGHT);
+        musicSettingsScene.setOnKeyPressed(event -> {
+            if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                try { audioManager.playSoundEffect("button_click"); } catch (Exception ex) { System.err.println("播放按钮音效失败: " + ex.getMessage()); }
+                showMainMenu();
+            }
+        });
+    }
+    
+    /**
+     * 显示音乐设置场景
+     */
+    public void showMusicSettingsScene() {
+        stage.setScene(musicSettingsScene);
+        gameModel.setGameState(GameState.MENU);
     }
 }
