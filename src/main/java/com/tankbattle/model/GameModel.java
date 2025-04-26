@@ -45,6 +45,8 @@ public class GameModel {
     private IntegerProperty level = new SimpleIntegerProperty(1);
     private IntegerProperty selectedLevel = new SimpleIntegerProperty(1); // 添加所选关卡属性
     private IntegerProperty remainingEnemies = new SimpleIntegerProperty(0);
+    // 剩余待生成的敌人数量
+    private int spawnRemaining = 0;
     private Random random;
     
     // 游戏区域大小
@@ -62,6 +64,9 @@ public class GameModel {
     // 关卡和存档管理器
     private LevelManager levelManager;
     private SaveManager saveManager;
+    
+    // 添加剩余待生成敌人计数
+    private int enemiesToSpawn;
     
     /**
      * 构造函数
@@ -133,9 +138,10 @@ public class GameModel {
         
         // 设置关卡敌人数量
         this.remainingEnemies.set(levelConfig.getEnemyTankCount());
-        
-        // 初始生成的敌人数量
+        // 初始生成数量
         int initialEnemies = Math.min(4, this.remainingEnemies.get());
+        // 设置待生成坦克数
+        this.spawnRemaining = this.remainingEnemies.get() - initialEnemies;
         
         // 加载墙体
         loadWalls(levelConfig);
@@ -198,12 +204,14 @@ public class GameModel {
      * @param level 关卡编号
      */
     private void generateDefaultLevel(int level) {
-        // 设置关卡敌人数量（随关卡增加）
+        // 设置关卡敌人数量
         this.remainingEnemies.set(10 + (level - 1) * 2);
-        
+
         // 初始生成的敌人数量
         int initialEnemies = Math.min(4, this.remainingEnemies.get());
-        
+        // 初始化待生成坦克数量
+        this.spawnRemaining = this.remainingEnemies.get() - initialEnemies;
+
         // 生成敌人坦克
         for (int i = 0; i < initialEnemies; i++) {
             spawnEnemyTank();
@@ -664,9 +672,9 @@ public class GameModel {
         checkGameConditions();
         
         // 如果敌人数量不足，生成新敌人
-        if (enemyTanks.size() < 4 && remainingEnemies.get() > 0) {
+        if (enemyTanks.size() < 4 && spawnRemaining > 0) {
             spawnEnemyTank();
-            remainingEnemies.set(remainingEnemies.get() - 1);
+            spawnRemaining--; // 减少待生成数量
         }
         
         // 更新道具生成计时器
@@ -700,9 +708,7 @@ public class GameModel {
                 AudioManager.getInstance().playSoundEffect("tank_explosion");
                 
                 if (playerTank.getLives() <= 0) {
-                    // 游戏结束，播放游戏结束音乐
-                    AudioManager.getInstance().stopBackgroundMusic();
-                    AudioManager.getInstance().playBackgroundMusic("gameover_bgm.wav", true);
+                    // 游戏结束
                     gameState = GameState.GAME_OVER;
                 } else {
                     // 重生玩家坦克
@@ -723,7 +729,8 @@ public class GameModel {
                     
                     // 移除敌人坦克
                     enemyTanks.remove(enemyTank);
-                    
+                    // 减少剩余待击毁敌人数量
+                    remainingEnemies.set(remainingEnemies.get() - 1);
                     // 增加分数
                     score.set(score.get() + 100);
                     

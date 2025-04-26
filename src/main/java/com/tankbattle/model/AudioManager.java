@@ -139,20 +139,22 @@ public class AudioManager {
         }
     }
     
-    /**
-     * 播放背景音乐
-     * 
-     * @param path 音乐路径
-     * @param loop 是否循环
-     * @return 是否成功播放
-     */
+    // 当前正在播放的BGM路径
+    private String currentBgmPath;
+
     public boolean playBackgroundMusic(String path, boolean loop) {
         if (!musicEnabled || hasLoadingError) return false;
-        
+
+        // 重复播放同一路径时直接返回
+        if (currentBgmPath != null && currentBgmPath.equals(path) && bgmPlayer != null) {
+            return true;
+        }
+
+        // 停止并释放现有播放器
+        stopBackgroundMusic();
+
+        // 尝试加载资源，保持原有逻辑
         try {
-            // 停止当前播放的音乐
-            stopBackgroundMusic();
-            
             URL url = getClass().getClassLoader().getResource(path);
             // 尝试其他加载方式
             if (url == null) {
@@ -186,12 +188,10 @@ public class AudioManager {
                         bgmPlayer.setCycleCount(MediaPlayer.INDEFINITE);
                     }
                     bgmPlayer.setVolume(0.6);
-                    // 直接在 JavaFX 线程上播放，无需额外线程
-                    Platform.runLater(() -> {
-                        if (bgmPlayer != null) {
-                            bgmPlayer.play();
-                        }
-                    });
+                    // 直接播放背景音乐，同步调用，避免创建额外线程
+                    bgmPlayer.play();
+                    // 记录当前播放路径
+                    currentBgmPath = path;
                     return true;
                 } catch (Exception e) {
                     System.out.println("背景音乐创建失败: " + path + ", 错误: " + e.getMessage());
@@ -216,14 +216,15 @@ public class AudioManager {
                 bgmPlayer.stop();
                 bgmPlayer.dispose();
                 bgmPlayer = null;
-                
-                // 强制垃圾回收，确保旧的音频资源被释放
+                // 清除当前路径
+                currentBgmPath = null;
                 System.gc();
             }
         } catch (Exception e) {
             System.out.println("停止背景音乐失败: " + e.getMessage());
             // 即使出错，也确保播放器被置为null
             bgmPlayer = null;
+            currentBgmPath = null;
         }
     }
     

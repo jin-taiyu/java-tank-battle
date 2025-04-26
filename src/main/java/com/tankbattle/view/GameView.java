@@ -113,6 +113,8 @@ public class GameView {
     
     // 在类成员区域添加标志位，避免重复播放
     private boolean levelCompleteAudioPlayed = false;
+    // 游戏结束音乐播放标志，避免多次播放
+    private boolean gameOverAudioPlayed = false;
     
     /**
      * 构造函数
@@ -913,6 +915,8 @@ public class GameView {
      * 显示游戏场景
      */
     public void showGameScene() {
+        // 重置游戏结束音乐播放标志
+        gameOverAudioPlayed = false;
         levelCompleteAudioPlayed = false;
         try {
             // 播放游戏音乐
@@ -935,22 +939,22 @@ public class GameView {
      */
     public void showGameOverScene() {
         if (gameModel.getGameState() == GameState.GAME_OVER) {
-            try {
-                // 播放游戏结束音效
-                audioManager.playSoundEffect("game_over");
-                
-                // 停止游戏音乐，播放游戏结束音乐
-                audioManager.stopBackgroundMusic();
-                // 尝试播放音乐，但如果失败也继续执行
-                if (!audioManager.playBackgroundMusic("audio/gameover_bgm.wav", true)) {
-                    System.err.println("游戏结束背景音乐加载失败，游戏将继续运行");
+            if (!gameOverAudioPlayed) {
+                try {
+                    // 播放游戏结束音效
+                    audioManager.playSoundEffect("game_over");
+                    
+                    // 停止游戏音乐，播放游戏结束音乐
+                    audioManager.stopBackgroundMusic();
+                    if (!audioManager.playBackgroundMusic("audio/gameover_bgm.wav", true)) {
+                        System.err.println("游戏结束背景音乐加载失败，游戏将继续运行");
+                    }
+                } catch (Exception e) {
+                    System.err.println("播放游戏结束音效/音乐失败: " + e.getMessage());
+                    audioManager.disableAllAudio();
                 }
-            } catch (Exception e) {
-                System.err.println("播放游戏结束音效/音乐失败: " + e.getMessage());
-                // 出现异常时禁用所有音频
-                audioManager.disableAllAudio();
+                gameOverAudioPlayed = true;
             }
-            
             stage.setScene(gameOverScene);
         }
     }
