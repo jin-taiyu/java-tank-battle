@@ -508,8 +508,8 @@ public class GameView {
             loadGame();
         });
         
-        // 创建玩法说明按钮
-        Button helpButton = createStyledButton("玩法说明", 200, 50);
+        // 创建玩法说明按钮 (减小宽度)
+        Button helpButton = createStyledButton("玩法说明", 95, 40);
         helpButton.setOnAction(e -> {
             try {
                 audioManager.playSoundEffect("button_click");
@@ -519,12 +519,17 @@ public class GameView {
             showHelpScene();
         });
         
-        // 创建音乐设置按钮
-        Button musicButton = createStyledButton("音乐设置", 200, 50);
+        // 创建音乐设置按钮 (减小宽度)
+        Button musicButton = createStyledButton("音乐设置", 95, 40);
         musicButton.setOnAction(e -> {
             try { audioManager.playSoundEffect("button_click"); } catch (Exception ex) { System.err.println("播放按钮音效失败: " + ex.getMessage()); }
             showMusicSettingsScene();
         });
+        
+        // 将玩法说明和音乐设置按钮放入水平布局
+        HBox utilityButtonsBox = new HBox(10); // 10像素的间距
+        utilityButtonsBox.setAlignment(Pos.CENTER);
+        utilityButtonsBox.getChildren().addAll(helpButton, musicButton);
         
         // 创建退出游戏按钮
         Button exitButton = createStyledButton("退出游戏", 200, 50);
@@ -537,11 +542,11 @@ public class GameView {
             System.exit(0);
         });
         
-        // 添加按钮到菜单选项面板
-        menuOptionsBox.getChildren().addAll(levelSelectorBox, startButton, loadButton, helpButton, musicButton, exitButton);
+        // 添加按钮到菜单选项面板 (使用新的水平布局替代单独的按钮)
+        menuOptionsBox.getChildren().addAll(levelSelectorBox, startButton, loadButton, utilityButtonsBox, exitButton);
         
         // 创建半透明面板作为菜单选项的背景
-        Rectangle menuBg = new Rectangle(400, 350); // 加大高度以适应新增的按钮
+        Rectangle menuBg = new Rectangle(400, 320); // 适当减小高度，因为现在按钮占用的空间更少
         menuBg.setFill(Color.rgb(0, 0, 0, 0.7));
         menuBg.setArcWidth(20);
         menuBg.setArcHeight(20);
