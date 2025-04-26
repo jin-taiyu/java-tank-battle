@@ -72,6 +72,7 @@ public class GameView {
     private Scene victoryScene;
     private Scene pauseScene;
     private Scene helpScene;
+    private Scene levelCompleteScene;
     private Canvas gameCanvas;
     private GraphicsContext gc;
     
@@ -153,6 +154,9 @@ public class GameView {
         
         // 创建帮助场景
         createHelpScene();
+        
+        // 创建关卡完成场景
+        createLevelCompleteScene();
     }
     
     /**
@@ -949,6 +953,32 @@ public class GameView {
     }
     
     /**
+     * 显示关卡完成场景
+     */
+    public void showLevelCompleteScene() {
+        if (gameModel.getGameState() == GameState.LEVEL_COMPLETE) {
+            try {
+                // 重复播放胜利音效
+                audioManager.playSoundEffect("victory");
+                
+                // 停止当前背景音乐
+                audioManager.stopBackgroundMusic();
+                
+                // 播放较轻快的背景音乐，可以使用菜单音乐或特殊关卡完成音乐
+                if (!audioManager.playBackgroundMusic("audio/menu_bgm.wav", true)) {
+                    System.err.println("关卡完成背景音乐加载失败");
+                }
+            } catch (Exception e) {
+                System.err.println("播放关卡完成音效/音乐失败: " + e.getMessage());
+                // 出现异常时禁用所有音频
+                audioManager.disableAllAudio();
+            }
+            
+            stage.setScene(levelCompleteScene);
+        }
+    }
+    
+    /**
      * 显示暂停场景
      */
     public void showPauseScene() {
@@ -1560,5 +1590,122 @@ public class GameView {
                               javafx.event.EventHandler<KeyEvent> onKeyReleased) {
         gameScene.setOnKeyPressed(onKeyPressed);
         gameScene.setOnKeyReleased(onKeyReleased);
+    }
+    
+    /**
+     * 创建关卡完成场景
+     */
+    private void createLevelCompleteScene() {
+        // 创建主界面布局
+        StackPane levelCompleteRoot = new StackPane();
+        
+        // 创建背景
+        Rectangle background = new Rectangle(GAME_WIDTH, GAME_HEIGHT);
+        background.setFill(Color.rgb(30, 50, 80)); // 蓝色背景表示关卡完成
+        
+        // 添加装饰元素 - 玩家坦克图像
+        ImageView playerTank = new ImageView(resourceManager.getImage("player_tank_up"));
+        playerTank.setFitWidth(100);
+        playerTank.setFitHeight(100);
+        playerTank.setTranslateX(-GAME_WIDTH / 4);
+        playerTank.setTranslateY(-GAME_HEIGHT / 4);
+        playerTank.setOpacity(0.8);
+        
+        // 添加装饰元素 - 敌人坦克图像（显示为倒下的）
+        ImageView enemyTank = new ImageView(resourceManager.getImage("enemy_tank_down"));
+        enemyTank.setFitWidth(80);
+        enemyTank.setFitHeight(80);
+        enemyTank.setTranslateX(GAME_WIDTH / 4);
+        enemyTank.setTranslateY(GAME_HEIGHT / 5);
+        enemyTank.setRotate(90); // 侧倒表示被击败
+        enemyTank.setOpacity(0.6);
+        
+        // 创建关卡完成文本
+        Text levelCompleteText = new Text("关卡完成！");
+        levelCompleteText.setFont(Font.font("Arial", FontWeight.BOLD, 60));
+        levelCompleteText.setFill(Color.LIGHTBLUE);
+        levelCompleteText.setStroke(Color.BLACK);
+        levelCompleteText.setStrokeWidth(2);
+        
+        // 添加光晕效果
+        Glow glow = new Glow(0.7);
+        DropShadow shadow = new DropShadow();
+        shadow.setColor(Color.DEEPSKYBLUE);
+        shadow.setRadius(12);
+        shadow.setInput(glow);
+        levelCompleteText.setEffect(shadow);
+        
+        // 创建统计信息文本
+        VBox statsBox = new VBox(15);
+        statsBox.setAlignment(Pos.CENTER);
+        
+        // 当前关卡文本
+        Text currentLevelText = new Text();
+        currentLevelText.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        currentLevelText.setFill(Color.WHITE);
+        currentLevelText.textProperty().bind(gameModel.levelProperty().asString("关卡: %d"));
+        
+        // 得分文本
+        Text scoreText = new Text();
+        scoreText.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        scoreText.setFill(Color.WHITE);
+        scoreText.textProperty().bind(gameModel.scoreProperty().asString("当前得分: %d"));
+        
+        // 将文本添加到统计信息框中
+        statsBox.getChildren().addAll(currentLevelText, scoreText);
+        
+        // 设置标题和统计信息位置
+        VBox textBox = new VBox(30);
+        textBox.setAlignment(Pos.CENTER);
+        textBox.getChildren().addAll(levelCompleteText, statsBox);
+        
+        // 创建按钮面板
+        VBox buttonBox = new VBox(15);
+        buttonBox.setAlignment(Pos.CENTER);
+        buttonBox.setMaxWidth(300);
+        buttonBox.setPadding(new Insets(20));
+        
+        // 创建下一关按钮
+        Button nextLevelButton = createStyledButton("进入下一关", 200, 50);
+        nextLevelButton.setOnAction(e -> {
+            try {
+                audioManager.playSoundEffect("button_click");
+            } catch (Exception ex) {
+                System.err.println("播放按钮音效失败: " + ex.getMessage());
+            }
+            nextLevel();
+        });
+        
+        // 创建返回主菜单按钮
+        Button menuButton = createStyledButton("返回主菜单", 200, 50);
+        menuButton.setOnAction(e -> {
+            try {
+                audioManager.playSoundEffect("button_click");
+            } catch (Exception ex) {
+                System.err.println("播放按钮音效失败: " + ex.getMessage());
+            }
+            showMainMenu();
+        });
+        
+        // 添加按钮到面板
+        buttonBox.getChildren().addAll(nextLevelButton, menuButton);
+        
+        // 创建半透明面板作为按钮的背景
+        Rectangle buttonBg = new Rectangle(300, 150);
+        buttonBg.setFill(Color.rgb(0, 0, 0, 0.7));
+        buttonBg.setArcWidth(20);
+        buttonBg.setArcHeight(20);
+        buttonBg.setStroke(Color.LIGHTBLUE);
+        buttonBg.setStrokeWidth(2);
+        
+        // 组合按钮和背景
+        StackPane buttonPane = new StackPane(buttonBg, buttonBox);
+        buttonPane.setTranslateY(50);
+        
+        // 将所有元素添加到主布局
+        levelCompleteRoot.getChildren().addAll(background, playerTank, enemyTank, textBox, buttonPane);
+        
+        // 创建场景
+        levelCompleteScene = new Scene(levelCompleteRoot, GAME_WIDTH, GAME_HEIGHT);
     }
 }

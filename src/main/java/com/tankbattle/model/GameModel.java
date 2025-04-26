@@ -771,7 +771,8 @@ public class GameModel {
             AudioManager.getInstance().playSoundEffect("victory");
             
             if (level.get() < 5) { // 增加到5个关卡
-                nextLevel();
+                // 进入关卡完成状态，而不是直接进入下一关
+                gameState = GameState.LEVEL_COMPLETE;
             } else {
                 // 游戏全部通关，播放胜利音乐
                 AudioManager.getInstance().stopBackgroundMusic();

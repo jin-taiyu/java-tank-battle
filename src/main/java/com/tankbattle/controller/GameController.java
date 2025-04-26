@@ -176,6 +176,9 @@ public class GameController {
             case GAME_OVER:
                 gameView.showGameOverScene();
                 break;
+            case LEVEL_COMPLETE:
+                gameView.showLevelCompleteScene();
+                break;
             default:
                 break;
         }

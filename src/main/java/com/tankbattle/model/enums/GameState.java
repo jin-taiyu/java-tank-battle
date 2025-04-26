@@ -29,5 +29,10 @@ public enum GameState {
     /**
      * 游戏失败状态
      */
-    GAME_OVER
+    GAME_OVER,
+    
+    /**
+     * 关卡完成状态
+     */
+    LEVEL_COMPLETE
 }
