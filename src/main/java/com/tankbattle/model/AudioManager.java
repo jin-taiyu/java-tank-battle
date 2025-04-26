@@ -75,7 +75,22 @@ public class AudioManager {
      */
     private boolean loadSoundEffect(String name, String path) {
         try {
-            URL url = getClass().getClassLoader().getResource(path);
+            URL url = null;
+            
+            // 尝试多种加载方式
+            // 1. 直接从根路径加载
+            url = AudioManager.class.getResource("/" + path);
+            
+            // 2. 使用类加载器
+            if (url == null) {
+                url = getClass().getClassLoader().getResource(path);
+            }
+            
+            // 3. 尝试从模块路径加载
+            if (url == null) {
+                url = getClass().getResource("/com/tankbattle/" + path);
+            }
+            
             if (url != null) {
                 AudioClip clip = new AudioClip(url.toString());
                 soundEffects.put(name, clip);

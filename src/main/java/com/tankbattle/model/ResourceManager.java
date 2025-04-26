@@ -250,8 +250,22 @@ public class ResourceManager {
      */
     public void loadImage(String name, String path, int width, int height) {
         try {
-            // 从类路径加载SVG资源
-            InputStream inputStream = getClass().getClassLoader().getResourceAsStream(path);
+            // 从模块资源中加载SVG资源
+            InputStream inputStream = null;
+            
+            // 首先尝试使用模块化方式加载
+            inputStream = ResourceManager.class.getResourceAsStream("/" + path);
+            
+            // 如果失败，尝试常规类加载器方式
+            if (inputStream == null) {
+                inputStream = getClass().getClassLoader().getResourceAsStream(path);
+            }
+            
+            // 如果仍然失败，尝试使用模块名作为前缀
+            if (inputStream == null) {
+                inputStream = getClass().getResourceAsStream("/com/tankbattle/" + path);
+            }
+            
             if (inputStream == null) {
                 System.out.println("未找到资源: " + path);
                 // 如果找不到SVG资源，创建一个简单的默认图像
